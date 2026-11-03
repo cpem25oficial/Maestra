@@ -30,7 +30,8 @@ import {
   FolderOpen,
   Layers,
   ArrowUpRight,
-  Clock
+  Clock,
+  Copy
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { LicenseRequest } from '../../types';
@@ -75,6 +76,8 @@ export const SuperadminArchivosModule: React.FC = () => {
   const [deleteMode, setDeleteMode] = useState<'FILE_ONLY' | 'WHOLE_REQUEST'>('FILE_ONLY');
   const [deleteReason, setDeleteReason] = useState('Limpieza periódica / archivo no válido');
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
+  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState(false);
 
   // Google Drive state
   const [driveConnected, setDriveConnected] = useState<boolean>(() => isGoogleDriveConnected());
@@ -131,6 +134,7 @@ export const SuperadminArchivosModule: React.FC = () => {
   // Google Drive connect
   const handleConnectDrive = async () => {
     setIsConnectingDrive(true);
+    setUnauthorizedDomain(null);
     try {
       const res = await connectGoogleAdminDrive();
       setFeedbackMsg({
@@ -138,6 +142,10 @@ export const SuperadminArchivosModule: React.FC = () => {
         text: `Google Drive institucional conectado con éxito (${res.user.email || 'cpem25oficial@gmail.com'}). Ya puede sincronizar y ver los archivos en las carpetas.`,
       });
     } catch (err: any) {
+      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
+        const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'Netlify';
+        setUnauthorizedDomain(currentHost);
+      }
       setFeedbackMsg({
         type: 'error',
         text: `No se pudo conectar Google Drive: ${err.message || 'Error de autenticación'}`,
@@ -857,6 +865,66 @@ export const SuperadminArchivosModule: React.FC = () => {
           >
             <X className="w-4 h-4" />
           </button>
+        </div>
+      )}
+
+      {/* UNAUTHORIZED DOMAIN HELP GUIDE */}
+      {unauthorizedDomain && (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 sm:p-5 text-amber-950 space-y-3.5 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-amber-200/80 text-amber-800">
+                <Lock className="w-5 h-5" />
+              </span>
+              <div>
+                <h4 className="font-bold text-sm sm:text-base text-amber-900">
+                  Dominio no autorizado en Firebase Authentication
+                </h4>
+                <p className="text-xs text-amber-800">
+                  Por seguridad, Firebase Authentication bloquea ventanas emergentes (popups) de Google en dominios nuevos que no estén registrados en la lista de dominios autorizados.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setUnauthorizedDomain(null)}
+              className="text-amber-500 hover:text-amber-800 p-1 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="bg-white/90 rounded-xl p-3 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-[11px] uppercase tracking-wider font-bold text-slate-500 block">Tu dominio de Netlify:</span>
+              <code className="text-sm font-mono font-bold text-slate-800 select-all">{unauthorizedDomain}</code>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(unauthorizedDomain);
+                setCopiedDomain(true);
+                setTimeout(() => setCopiedDomain(false), 3000);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition-all cursor-pointer"
+            >
+              {copiedDomain ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedDomain ? '¡Dominio copiado!' : 'Copiar dominio'}</span>
+            </button>
+          </div>
+
+          <div className="space-y-2 text-xs text-amber-900 leading-relaxed">
+            <p className="font-bold">Cómo autorizar este dominio en 1 minuto en Firebase Console:</p>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Ingresa a la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold text-blue-700 inline-flex items-center gap-1">Consola de Firebase <ExternalLink className="w-3 h-3" /></a> y selecciona tu proyecto.</li>
+              <li>En el menú lateral izquierdo, ve a <strong>Build &gt; Authentication</strong> (o <strong>Compilación &gt; Authentication</strong>).</li>
+              <li>Abre la pestaña <strong>Settings</strong> (Configuración) y haz clic en <strong>Authorized domains</strong> (Dominios autorizados).</li>
+              <li>Haz clic en <strong>Add domain</strong> (Agregar dominio), pega <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-200">{unauthorizedDomain}</code> y guarda.</li>
+            </ol>
+          </div>
+
+          <div className="p-3 bg-amber-100/80 border border-amber-300 rounded-xl text-xs text-amber-900">
+            <strong>💡 Solución instantánea sin tocar Firebase:</strong> Como la autorización de Google Drive se almacena en la base de datos Firestore, abre el proyecto en tu PC local (<code className="font-mono bg-white px-1 py-0.5 rounded">http://localhost:3000</code>) o aquí en AI Studio y haz clic en <strong>Conectar Google Drive</strong> una sola vez con la cuenta <code className="font-mono bg-white px-1 py-0.5 rounded">cpem25oficial@gmail.com</code>. Al guardarse en la nube, ¡tu sitio en Netlify se conectará inmediatamente de forma automática!
+          </div>
         </div>
       )}
 

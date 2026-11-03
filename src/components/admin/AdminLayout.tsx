@@ -75,8 +75,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const handleQuickConnectDrive = async () => {
     try {
       await connectGoogleAdminDrive();
-    } catch (e) {
+    } catch (e: any) {
       console.warn('Error connecting drive:', e);
+      // Cambiar a la pestaña de archivos donde se muestra el panel de ayuda detallado
+      setActiveTab('archivos');
     }
   };
 

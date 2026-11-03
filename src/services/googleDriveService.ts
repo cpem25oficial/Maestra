@@ -186,6 +186,15 @@ export const connectGoogleAdminDrive = async (): Promise<{ user: User; accessTok
     return { user: result.user, accessToken: cachedDriveAccessToken };
   } catch (error: any) {
     console.error('Error al conectar Google Drive de Administrador:', error);
+    if (error?.code === 'auth/unauthorized-domain' || error?.message?.includes('unauthorized-domain')) {
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : 'este dominio';
+      const friendlyErr = new Error(
+        `Dominio no autorizado en Firebase (${hostname}). Agrega este dominio en Firebase Console > Authentication > Settings > Authorized domains, o conéctalo una vez desde localhost/AI Studio.`
+      );
+      (friendlyErr as any).code = 'auth/unauthorized-domain';
+      (friendlyErr as any).hostname = hostname;
+      throw friendlyErr;
+    }
     throw error;
   }
 };
