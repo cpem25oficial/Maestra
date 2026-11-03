@@ -1,10 +1,24 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import rawFirebaseConfig from '../../firebase-applet-config.json';
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId || 'ai-studio-d7258386-3f0d-4c10-bc1f-4315081542ab');
+const resolvedConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || (rawFirebaseConfig as any).apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || (rawFirebaseConfig as any).authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || (rawFirebaseConfig as any).projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || (rawFirebaseConfig as any).storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || (rawFirebaseConfig as any).messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || (rawFirebaseConfig as any).appId,
+};
+
+const databaseId = 
+  import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || 
+  (rawFirebaseConfig as any).firestoreDatabaseId || 
+  'ai-studio-d7258386-3f0d-4c10-bc1f-4315081542ab';
+
+const app = initializeApp(resolvedConfig);
+export const db = getFirestore(app, databaseId);
 export const auth = getAuth(app);
 
 export enum OperationType {
