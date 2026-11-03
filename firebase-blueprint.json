@@ -1,0 +1,166 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System administrative user",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 150 },
+        "displayName": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "enum": ["superadmin", "admin", "visitante"] },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 40 }
+      },
+      "required": ["email", "role", "active"]
+    },
+    "Agent": {
+      "title": "Agent",
+      "description": "Educational institution employee / agent",
+      "type": "object",
+      "properties": {
+        "apellidos": { "type": "string", "maxLength": 100 },
+        "nombres": { "type": "string", "maxLength": 100 },
+        "fullName": { "type": "string", "maxLength": 200 },
+        "employeeNumber": { "type": "string", "maxLength": 64 },
+        "dni": { "type": "string", "maxLength": 32 },
+        "telefono": { "type": "string", "maxLength": 50 },
+        "email": { "type": "string", "maxLength": 150 },
+        "fechaNacimiento": { "type": "string", "maxLength": 10 },
+        "lugarNacimiento": { "type": "string", "maxLength": 150 },
+        "activo": { "type": "boolean" },
+        "hasAssignedPost": { "type": "boolean" }
+      },
+      "required": ["apellidos", "nombres", "employeeNumber", "dni", "activo"]
+    },
+    "Cargo": {
+      "title": "Cargo",
+      "description": "School teaching or non-teaching position descriptor",
+      "type": "object",
+      "properties": {
+        "secuencia": { "type": "string", "maxLength": 64 },
+        "turno": { "type": "string", "maxLength": 50 },
+        "curso": { "type": "string", "maxLength": 50 },
+        "seccion": { "type": "string", "maxLength": 50 },
+        "descripcion": { "type": "string", "maxLength": 250 },
+        "obligaciones": { "type": "string", "maxLength": 500 },
+        "area": { "type": "string", "maxLength": 100 },
+        "tieneArticulacion": { "type": "boolean" },
+        "activo": { "type": "boolean" }
+      },
+      "required": ["secuencia", "turno", "descripcion", "activo"]
+    },
+    "Puesto": {
+      "title": "Puesto",
+      "description": "Instance of a cargo with assigned agents in specific order",
+      "type": "object",
+      "properties": {
+        "cargoId": { "type": "string", "maxLength": 64 },
+        "descripcion": { "type": "string", "maxLength": 250 },
+        "activo": { "type": "boolean" }
+      },
+      "required": ["cargoId", "activo"]
+    },
+    "LicenseType": {
+      "title": "LicenseType",
+      "description": "Administrative license regulations and rules",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "maxLength": 32 },
+        "name": { "type": "string", "maxLength": 150 },
+        "maxDaysPerYear": { "type": "number" },
+        "maxConsecutiveDays": { "type": "number" },
+        "maxUsagePerYear": { "type": "number" },
+        "requiresJustification": { "type": "boolean" },
+        "requiresObligations": { "type": "boolean" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["code", "name", "requiresJustification"]
+    },
+    "LicenseRequest": {
+      "title": "LicenseRequest",
+      "description": "License request with state history, obligations, and signature",
+      "type": "object",
+      "properties": {
+        "employeeNumber": { "type": "string", "maxLength": 64 },
+        "agentName": { "type": "string", "maxLength": 200 },
+        "postsSelection": { "type": "string", "maxLength": 64 },
+        "postDescription": { "type": "string", "maxLength": 250 },
+        "dateFrom": { "type": "string", "maxLength": 10 },
+        "dateTo": { "type": "string", "maxLength": 10 },
+        "isArticulation": { "type": "boolean" },
+        "licenseTypeId": { "type": "string", "maxLength": 64 },
+        "licenseTypeCode": { "type": "string", "maxLength": 32 },
+        "licenseTypeName": { "type": "string", "maxLength": 150 },
+        "status": { "type": "string", "enum": ["Pendiente", "Autorizada", "Justificada", "Completada", "Rechazada", "Injustificada", "Descuento", "Eliminada"] },
+        "cantidadObligaciones": { "type": "number" },
+        "obligaciones": { "type": "string", "maxLength": 1000 },
+        "signatureDataUrl": { "type": "string", "maxLength": 500000 },
+        "source": { "type": "string", "enum": ["Solicitud", "SISO"] }
+      },
+      "required": ["employeeNumber", "agentName", "dateFrom", "dateTo", "status"]
+    },
+    "SisoLicense": {
+      "title": "SisoLicense",
+      "description": "License record imported from external SISO CSV file",
+      "type": "object",
+      "properties": {
+        "sisoId": { "type": "string", "maxLength": 64 },
+        "nroEmpleado": { "type": "string", "maxLength": 64 },
+        "dni": { "type": "string", "maxLength": 32 },
+        "nombre": { "type": "string", "maxLength": 150 },
+        "email": { "type": "string", "maxLength": 150 },
+        "tipo": { "type": "string", "maxLength": 100 },
+        "desde": { "type": "string", "maxLength": 10 },
+        "hasta": { "type": "string", "maxLength": 10 },
+        "dias": { "type": "number" },
+        "codLicencia": { "type": "string", "maxLength": 32 }
+      },
+      "required": ["sisoId", "nroEmpleado", "desde", "hasta"]
+    },
+    "SystemSetting": {
+      "title": "SystemSetting",
+      "description": "Global institutional settings including shared Google Drive authorization",
+      "type": "object",
+      "properties": {
+        "accessToken": { "type": "string" },
+        "userEmail": { "type": "string", "maxLength": 150 },
+        "updatedAt": { "type": "string", "maxLength": 40 },
+        "expiresAt": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "System users and administrator accounts"
+    },
+    "/agents/{agentId}": {
+      "schema": "Agent",
+      "description": "Educational institution staff and teachers"
+    },
+    "/cargos/{cargoId}": {
+      "schema": "Cargo",
+      "description": "School positions with schedules and articulation"
+    },
+    "/puestos/{puestoId}": {
+      "schema": "Puesto",
+      "description": "Post instances with ordered agent assignments"
+    },
+    "/license_types/{typeId}": {
+      "schema": "LicenseType",
+      "description": "License configuration and administrative limits"
+    },
+    "/license_requests/{requestId}": {
+      "schema": "LicenseRequest",
+      "description": "Internal license requests submitted by agents"
+    },
+    "/siso_licenses/{licenseId}": {
+      "schema": "SisoLicense",
+      "description": "Licenses imported from SISO CSV"
+    },
+    "/system_settings/{settingId}": {
+      "schema": "SystemSetting",
+      "description": "Institutional configuration and shared Google Drive tokens"
+    }
+  }
+}

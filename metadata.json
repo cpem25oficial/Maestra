@@ -1,0 +1,8 @@
+{
+  "name": "Portal de Agentes - Solicitud de Licencias y Ausencias",
+  "description": "Solicitar licencias",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

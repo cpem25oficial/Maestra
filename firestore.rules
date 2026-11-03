@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Agents directory
+    match /agents/{agentId} {
+      allow read, write: if true;
+    }
+
+    // Cargos
+    match /cargos/{cargoId} {
+      allow read, write: if true;
+    }
+
+    // Puestos and assignments
+    match /puestos/{puestoId} {
+      allow read, write: if true;
+    }
+
+    // License types
+    match /license_types/{typeId} {
+      allow read, write: if true;
+    }
+
+    // License requests
+    match /license_requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    // SISO licenses & imports
+    match /siso_licenses/{licenseId} {
+      allow read, write: if true;
+    }
+    match /siso_imports/{importId} {
+      allow read, write: if true;
+    }
+
+    // Audit logs
+    match /audit_logs/{logId} {
+      allow read, write: if true;
+    }
+
+    // System settings (e.g. shared drive integration)
+    match /system_settings/{settingId} {
+      allow read, write: if true;
+    }
+  }
+}
