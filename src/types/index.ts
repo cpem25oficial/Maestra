@@ -32,20 +32,28 @@ export interface Horario {
 
 export interface Cargo {
   id: string;
+  cargo_id?: number;
   secuencia: string;    // ej. "220" o "SEC-101"
   turno: 'Mañana' | 'Tarde' | 'Vespertino' | 'Noche' | 'Central' | 'Extendido' | 'Intermedio';
+  turno_codigo?: string;
   curso: string;        // ej. "1°", "2°", "3°"
+  curso_raw?: string;
   seccion: string;      // ej. "Div. A", "1°", "Única"
+  seccion_raw?: string;
   descripcion: string;  // ej. "Artes Visuales", "Biología"
   obligaciones?: string;
   area: string;
+  area_id?: number | null;
   horarios: Horario[];
   tieneArticulacion: boolean;
+  tiene_art?: boolean;
   horarioArticulacion?: Horario;
   activo: boolean;
   ordenVisual?: number; // Para ordenar y mover filas en el listado
+  orden_visual?: number;
   csvIndex?: number;    // Índice de orden original en el CSV
   createdAt?: string;
+  created_at?: string;
 }
 
 export interface PuestoAgenteAsignado {

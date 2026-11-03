@@ -7,13 +7,13 @@ const STORAGE_KEY_USERS_LIST = 'cpem_system_users_v1';
 
 export const INITIAL_SYSTEM_USERS: (SystemUser & { passwordHash: string })[] = [
   {
-    id: 'user-superadmin',
+    id: '1',
     email: 'cpem25oficial@gmail.com',
-    displayName: 'Dirección General (Superadmin)',
+    displayName: 'Superadmin CPEM 25',
     role: 'superadmin',
     active: true,
     createdAt: '2026-01-01T08:00:00.000Z',
-    passwordHash: 'admin123',
+    passwordHash: '123123',
   },
 ];
 
@@ -39,15 +39,22 @@ class AuthService {
           } else {
             this.users.push({
               ...u,
-              passwordHash: u.passwordHash || 'cpem2026',
+              passwordHash: u.passwordHash || '123123',
             });
           }
         });
+        // Garantizar que superadmin tenga la clave actualizada 123123
+        const superIdx = this.users.findIndex(u => u.email.toLowerCase() === 'cpem25oficial@gmail.com');
+        if (superIdx >= 0) {
+          this.users[superIdx].passwordHash = '123123';
+          this.users[superIdx].active = true;
+          this.users[superIdx].role = 'superadmin';
+        }
         this.saveUsers();
       } else {
         // Seed default superadmin in Firestore
-        const { passwordHash, ...safeSuperadmin } = INITIAL_SYSTEM_USERS[0];
-        setDoc(doc(db, 'users', safeSuperadmin.id), safeSuperadmin).catch(() => {});
+        const superadmin = INITIAL_SYSTEM_USERS[0];
+        setDoc(doc(db, 'users', superadmin.id), superadmin).catch(() => {});
       }
     } catch (e) {
       console.warn('Firestore users sync notice:', e);

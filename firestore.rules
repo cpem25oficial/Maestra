@@ -54,6 +54,26 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // New relational collections
+    match /solicitud_licencias/{id} {
+      allow read, write: if true;
+    }
+    match /solicitud_historiales/{id} {
+      allow read, write: if true;
+    }
+    match /tipos_licencias/{id} {
+      allow read, write: if true;
+    }
+    match /areas/{id} {
+      allow read, write: if true;
+    }
+    match /horarios_cargos/{id} {
+      allow read, write: if true;
+    }
+    match /puestos_cargos/{id} {
+      allow read, write: if true;
+    }
+
     // System settings (e.g. shared drive integration)
     match /system_settings/{settingId} {
       allow read, write: if true;

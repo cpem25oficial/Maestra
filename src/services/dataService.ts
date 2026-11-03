@@ -23,20 +23,17 @@ import {
   LicenseStatus,
   HistorialEstadoSolicitud
 } from '../types';
-import { IMPORTED_AGENTS } from '../data/importedAgents';
-import { IMPORTED_CARGOS } from '../data/importedCargos';
-import { IMPORTED_PUESTOS } from '../data/importedPuestos';
-import { IMPORTED_LICENSE_TYPES } from '../data/importedLicenseTypes';
+import { SEED_CARGOS } from '../data/cargosData';
 
-// Storage keys
-const STORAGE_AGENTS = 'cpem_agents_v4';
-const STORAGE_CARGOS = 'cpem_cargos_v4';
-const STORAGE_PUESTOS = 'cpem_puestos_v4';
-const STORAGE_TYPES = 'cpem_license_types_v5';
-const STORAGE_REQUESTS = 'cpem_license_requests_v4';
-const STORAGE_SISO_LICENSES = 'cpem_siso_licenses_v5';
-const STORAGE_SISO_IMPORTS = 'cpem_siso_imports_v5';
-const STORAGE_AUDIT_LOGS = 'cpem_audit_logs_v4';
+// Storage keys (v6 - Base de datos limpia y lista para sembrar desde CSV)
+const STORAGE_AGENTS = 'cpem_agents_v6';
+const STORAGE_CARGOS = 'cpem_cargos_v6';
+const STORAGE_PUESTOS = 'cpem_puestos_v6';
+const STORAGE_TYPES = 'cpem_license_types_v6';
+const STORAGE_REQUESTS = 'cpem_license_requests_v6';
+const STORAGE_SISO_LICENSES = 'cpem_siso_licenses_v6';
+const STORAGE_SISO_IMPORTS = 'cpem_siso_imports_v6';
+const STORAGE_AUDIT_LOGS = 'cpem_audit_logs_v6';
 
 /**
  * Normaliza fechas provenientes de SISO (DD-MM-YYYY o DD/MM/YYYY) a formato estándar ISO YYYY-MM-DD.
@@ -336,23 +333,12 @@ export function formatDateTimeDMY(dateInput?: string | Date | null): string {
   return `${day}-${month}-${year} ${hours}:${mins} hs`;
 }
 
-// Initial Seed Agents - Includes all 156 real agents imported from institutional CSV
-// Processed from bottom to top with deduplication (most recent entry preserved)
-export const INITIAL_AGENTS: Agent[] = [...IMPORTED_AGENTS];
-
-// Initial Seed Cargos - Complete official dataset imported from CSV (493 cargos ordered by CSV sequence)
-export const INITIAL_CARGOS: Cargo[] = [...IMPORTED_CARGOS];
-
-// Initial Seed Puestos - Complete corresponding posts with assigned agents in order of designation
-export const INITIAL_PUESTOS: Puesto[] = [...IMPORTED_PUESTOS];
-
-// License Types Config - Complete official dataset imported from CSV (28 types)
-export const INITIAL_LICENSE_TYPES: LicenseType[] = [...IMPORTED_LICENSE_TYPES];
-
-// Initial SISO Licenses - Starts clean for production / superadmin use
+// Base de datos: Cargos sembrados desde CSV (424 registros)
+export const INITIAL_AGENTS: Agent[] = [];
+export const INITIAL_CARGOS: Cargo[] = [...SEED_CARGOS];
+export const INITIAL_PUESTOS: Puesto[] = [];
+export const INITIAL_LICENSE_TYPES: LicenseType[] = [];
 export const INITIAL_SISO_LICENSES: SisoLicense[] = [];
-
-// Initial Import History
 export const INITIAL_SISO_IMPORTS: SisoImportHistory[] = [];
 
 class DataService {
