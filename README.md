@@ -106,11 +106,23 @@ Al ser una aplicación estándar Vite SPA, puedes desplegar la carpeta `dist/` e
 2. Ejecuta en la carpeta del proyecto: `vercel`
 3. Sigue las instrucciones en pantalla. Se conectará automáticamente con tu repositorio de GitHub para actualizarse con cada commit.
 
-### Opción B: Netlify
-1. Arrastra la carpeta `dist/` en el panel de [Netlify Drop](https://app.netlify.com/drop), o
-2. Conecta tu repositorio de GitHub en Netlify seleccionando:
-   - Build command: `npm run build`
-   - Publish directory: `dist`
+### Opción B: Netlify (Totalmente Automático)
+El proyecto ya cuenta con `netlify.toml` y `public/_redirects` preconfigurados para compilar con `npm run build`, publicar `dist/` y soportar rutas SPA (`/admin`, `/dashboard`).
+
+1. Conecta tu repositorio de GitHub en Netlify.
+2. Netlify detectará automáticamente:
+   - **Build command**: `npm run build`
+   - **Publish directory**: `dist`
+3. **¿Necesitas el archivo `firebase-applet-config.json` en Netlify?**
+   - **No.** El código fuente (`src/services/firebase.ts`) ahora tiene soporte de contingencia integrado: compila perfectamente sin necesidad de subir `firebase-applet-config.json` a GitHub.
+   - Opcionalmente, puedes configurar las variables en **Site configuration > Environment variables** en el panel de Netlify si deseas modificarlas en el futuro:
+     - `VITE_FIREBASE_API_KEY`
+     - `VITE_FIREBASE_AUTH_DOMAIN`
+     - `VITE_FIREBASE_PROJECT_ID`
+     - `VITE_FIREBASE_STORAGE_BUCKET`
+     - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+     - `VITE_FIREBASE_APP_ID`
+     - `VITE_FIREBASE_FIRESTORE_DATABASE_ID`
 
 ### Opción C: Firebase Hosting (Plan Gratuito Spark)
 1. Instala Firebase CLI: `npm install -g firebase-tools`
