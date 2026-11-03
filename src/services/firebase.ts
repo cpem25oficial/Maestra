@@ -17,18 +17,43 @@ const DEFAULT_FIREBASE_CONFIG = {
   firestoreDatabaseId: 'ai-studio-d7258386-3f0d-4c10-bc1f-4315081542ab',
 };
 
+function cleanString(val: string | undefined): string | undefined {
+  if (!val) return undefined;
+  const trimmed = val.trim();
+  return trimmed.replace(/^["']|["']$/g, '');
+}
+
+function cleanAuthDomain(domain: string | undefined): string {
+  const val = cleanString(domain);
+  if (!val) return DEFAULT_FIREBASE_CONFIG.authDomain;
+  // Eliminar protocolo http:// o https:// si el usuario lo incluyó por error
+  let cleaned = val.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  // authDomain DEBE ser el dominio de Firebase (e.g. .firebaseapp.com) donde Google hospeda /__/auth/handler.
+  // Si por error se configuró el dominio de Netlify o Vercel, reasignar al dominio oficial de Firebase:
+  if (cleaned.includes('netlify.app') || cleaned.includes('vercel.app') || !cleaned.includes('.')) {
+    return DEFAULT_FIREBASE_CONFIG.authDomain;
+  }
+  return cleaned;
+}
+
+const rawApiKey = cleanString(import.meta.env.VITE_FIREBASE_API_KEY) || cleanString(rawFirebaseConfig.apiKey);
+const rawProjectId = cleanString(import.meta.env.VITE_FIREBASE_PROJECT_ID) || cleanString(rawFirebaseConfig.projectId);
+const rawBucket = cleanString(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET) || cleanString(rawFirebaseConfig.storageBucket);
+const rawSenderId = cleanString(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID) || cleanString(rawFirebaseConfig.messagingSenderId);
+const rawAppId = cleanString(import.meta.env.VITE_FIREBASE_APP_ID) || cleanString(rawFirebaseConfig.appId);
+
 const resolvedConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || rawFirebaseConfig.apiKey || DEFAULT_FIREBASE_CONFIG.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || rawFirebaseConfig.authDomain || DEFAULT_FIREBASE_CONFIG.authDomain,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || rawFirebaseConfig.projectId || DEFAULT_FIREBASE_CONFIG.projectId,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || rawFirebaseConfig.storageBucket || DEFAULT_FIREBASE_CONFIG.storageBucket,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || rawFirebaseConfig.messagingSenderId || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || rawFirebaseConfig.appId || DEFAULT_FIREBASE_CONFIG.appId,
+  apiKey: rawApiKey || DEFAULT_FIREBASE_CONFIG.apiKey,
+  authDomain: cleanAuthDomain(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || rawFirebaseConfig.authDomain),
+  projectId: rawProjectId || DEFAULT_FIREBASE_CONFIG.projectId,
+  storageBucket: (rawBucket ? rawBucket.replace(/^https?:\/\//i, '').replace(/\/+$/, '') : undefined) || DEFAULT_FIREBASE_CONFIG.storageBucket,
+  messagingSenderId: rawSenderId || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
+  appId: rawAppId || DEFAULT_FIREBASE_CONFIG.appId,
 };
 
 const databaseId = 
-  import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || 
-  rawFirebaseConfig.firestoreDatabaseId || 
+  cleanString(import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) || 
+  cleanString(rawFirebaseConfig.firestoreDatabaseId) || 
   DEFAULT_FIREBASE_CONFIG.firestoreDatabaseId;
 
 const app = initializeApp(resolvedConfig);
