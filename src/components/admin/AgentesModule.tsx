@@ -570,6 +570,18 @@ export const AgentesModule: React.FC = () => {
                 <span className="text-slate-400 block font-medium">Lugar:</span>
                 <span className="font-semibold text-slate-800">{viewingAgent.lugarNacimiento || '-'}</span>
               </div>
+              {viewingAgent.domicilio && (
+                <div className="col-span-2">
+                  <span className="text-slate-400 block font-medium">Domicilio:</span>
+                  <span className="font-semibold text-slate-800">{viewingAgent.domicilio}</span>
+                </div>
+              )}
+              {viewingAgent.titulo && (
+                <div className="col-span-2">
+                  <span className="text-slate-400 block font-medium">Título:</span>
+                  <span className="font-semibold text-slate-800">{viewingAgent.titulo}</span>
+                </div>
+              )}
             </div>
 
             {/* Section 4: 1. Cargos y puestos que ocupa */}

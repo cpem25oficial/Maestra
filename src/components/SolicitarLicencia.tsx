@@ -757,7 +757,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
               >
                 {licenseTypes.map((type) => (
                   <option key={type.id} value={type.id}>
-                    {type.code} - {type.name} {type.requiresJustification ? '(Requiere comprobante)' : ''}
+                    {type.code ? `${type.code} - ` : ''}{type.name} {type.requiresJustification ? '(Requiere comprobante)' : ''}
                   </option>
                 ))}
               </select>

@@ -39,7 +39,7 @@ export const ConfiguracionModule: React.FC = () => {
   const [formData, setFormData] = useState<{
     code: string;
     name: string;
-    category: 'Corta duración' | 'Larga duración' | 'Especial';
+    category: 'Corta duración' | 'Larga duración' | 'Especial' | string;
     sinLimite: boolean;
     diasTotales: number;
     diasMensuales: number;

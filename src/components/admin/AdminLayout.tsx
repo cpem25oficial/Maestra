@@ -22,7 +22,9 @@ import {
   FolderArchive,
   ShieldAlert,
   Cloud,
-  Check
+  Check,
+  Users2,
+  Network
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { SystemUser, LicenseRequest } from '../../types';
@@ -35,6 +37,8 @@ import { SisoImportModule } from './SisoImportModule';
 import { ConfiguracionModule } from './ConfiguracionModule';
 import { UsuariosModule } from './UsuariosModule';
 import { SuperadminArchivosModule } from './SuperadminArchivosModule';
+import { AsambleaModule } from './AsambleaModule';
+import { ArticulacionesModule } from './ArticulacionesModule';
 
 interface AdminLayoutProps {
   onSwitchToPublicPortal: () => void;
@@ -43,11 +47,13 @@ interface AdminLayoutProps {
 
 export type AdminTab = 
   | 'dashboard'
-  | 'agentes'
   | 'cargos'
   | 'solicitudes'
+  | 'agentes'
   | 'siso'
   | 'configuracion'
+  | 'asamblea'
+  | 'articulaciones'
   | 'usuarios'
   | 'archivos';
 
@@ -101,10 +107,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const generalNavItems: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
     { id: 'cargos', label: 'Cargos y Puestos', icon: <Briefcase className="w-5 h-5 shrink-0" /> },
-    { id: 'agentes', label: 'Agentes', icon: <Users className="w-5 h-5 shrink-0" /> },
     { id: 'solicitudes', label: 'Solicitudes de Licencias', icon: <FileText className="w-5 h-5 shrink-0" /> },
-    { id: 'siso', label: 'Importar SISO', icon: <FileSpreadsheet className="w-5 h-5 shrink-0" /> },
-    { id: 'configuracion', label: 'Tipos de Licencia', icon: <Settings className="w-5 h-5 shrink-0" /> },
+    { id: 'agentes', label: 'Agentes', icon: <Users className="w-5 h-5 shrink-0" /> },
+    { id: 'siso', label: 'SISO (Carga y Filtros)', icon: <FileSpreadsheet className="w-5 h-5 shrink-0" /> },
+    { id: 'configuracion', label: 'Tipos de Licencias', icon: <Settings className="w-5 h-5 shrink-0" /> },
+    { id: 'asamblea', label: 'Asamblea', icon: <Users2 className="w-5 h-5 shrink-0" /> },
+    { id: 'articulaciones', label: 'Articulaciones', icon: <Network className="w-5 h-5 shrink-0" /> },
   ];
 
   const superadminNavItems: { id: AdminTab; label: string; icon: React.ReactNode; badge?: string }[] = [
@@ -560,6 +568,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           {activeTab === 'siso' && <SisoImportModule />}
 
           {activeTab === 'configuracion' && <ConfiguracionModule />}
+
+          {activeTab === 'asamblea' && <AsambleaModule />}
+
+          {activeTab === 'articulaciones' && <ArticulacionesModule />}
 
           {activeTab === 'usuarios' && <UsuariosModule />}
 

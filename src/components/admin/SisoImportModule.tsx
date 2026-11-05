@@ -17,7 +17,9 @@ import {
   Clock,
   ClipboardPaste,
   FileCheck,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { SisoLicense, SisoImportHistory } from '../../types';
 import { dataService, formatDMY, formatDateTimeDMY, parseCSVLine, normalizeSisoDate } from '../../services/dataService';
@@ -52,9 +54,11 @@ export const SisoImportModule: React.FC = () => {
     errors: string[];
   } | null>(null);
 
-  // Table search & filter
+  // Table search & filter & pagination
   const [searchQuery, setSearchQuery] = useState('');
   const [justificaFilter, setJustificaFilter] = useState('TODOS');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
 
   const refreshData = () => {
     setSisoLicenses([...dataService.getSisoLicenses()]);
@@ -223,6 +227,12 @@ export const SisoImportModule: React.FC = () => {
       lic.justifica.toLowerCase().includes(q)
     );
   });
+
+  const totalPages = Math.ceil(filteredSisoLicenses.length / pageSize) || 1;
+  const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+  const paginatedLicenses = filteredSisoLicenses.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const startIdx = filteredSisoLicenses.length > 0 ? (safePage - 1) * pageSize + 1 : 0;
+  const endIdx = Math.min(safePage * pageSize, filteredSisoLicenses.length);
 
   return (
     <div className="space-y-8">
@@ -522,7 +532,10 @@ export const SisoImportModule: React.FC = () => {
             {/* Filter by Justifica */}
             <select
               value={justificaFilter}
-              onChange={(e) => setJustificaFilter(e.target.value)}
+              onChange={(e) => {
+                setJustificaFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               className="py-2 px-3 text-xs rounded-xl border border-slate-300 bg-white font-medium text-slate-700"
             >
               <option value="TODOS">Todos los Estados</option>
@@ -536,7 +549,10 @@ export const SisoImportModule: React.FC = () => {
                 type="text"
                 placeholder="Buscar por agente, DNI, legajo o ID..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-300 focus:border-blue-500"
               />
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -559,14 +575,14 @@ export const SisoImportModule: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {filteredSisoLicenses.length === 0 ? (
+              {paginatedLicenses.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-400">
                     No se encontraron licencias SISO registradas con los filtros aplicados.
                   </td>
                 </tr>
               ) : (
-                filteredSisoLicenses.map((lic) => {
+                paginatedLicenses.map((lic) => {
                   const isJustificado = lic.justifica.toUpperCase().includes('JUSTIFICADO');
                   const isSinAuditar = lic.justifica.toUpperCase().includes('SIN AUDITAR');
 
@@ -619,6 +635,39 @@ export const SisoImportModule: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination bar */}
+        {filteredSisoLicenses.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 px-1 text-xs text-slate-500">
+            <div>
+              Mostrando <span className="font-semibold text-slate-800">{startIdx}</span> a <span className="font-semibold text-slate-800">{endIdx}</span> de <span className="font-semibold text-slate-800">{filteredSisoLicenses.length.toLocaleString('es-AR')}</span> licencias SISO
+            </div>
+
+            <div className="flex items-center gap-1.5 self-end sm:self-auto">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={safePage <= 1}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Anterior</span>
+              </button>
+
+              <span className="px-2.5 py-1 text-xs font-mono font-semibold text-slate-700 bg-slate-100 rounded-lg">
+                Pág. {safePage} de {totalPages}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                disabled={safePage >= totalPages}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700"
+              >
+                <span>Siguiente</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* IMPORT HISTORY */}

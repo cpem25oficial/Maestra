@@ -55,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <FolderClock className="w-4 h-4" />
-              <span>Mis solicitudes</span>
+              <span>Consultar licencias</span>
             </button>
           </nav>
         </div>
@@ -85,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <FolderClock className="w-5 h-5 mb-0.5" />
-            <span>Mis solicitudes</span>
+            <span>Consultar licencias</span>
           </button>
         </div>
       </div>

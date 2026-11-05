@@ -16,9 +16,11 @@ import {
   Ban,
   ArrowRight,
   Cloud,
-  ExternalLink
+  ExternalLink,
+  Activity,
+  FileSpreadsheet
 } from 'lucide-react';
-import { LicenseRequest, LicenseStatus, Agent } from '../types';
+import { LicenseRequest, LicenseStatus, Agent, SisoLicense } from '../types';
 import { dataService, calculateDaysBetween, formatDMY } from '../services/dataService';
 import { 
   processFileForUpload, 
@@ -48,6 +50,8 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [requests, setRequests] = useState<LicenseRequest[]>([]);
+  const [sisoLicenses, setSisoLicenses] = useState<SisoLicense[]>([]);
+  const [consultTab, setConsultTab] = useState<'internas' | 'siso'>('internas');
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<'TODOS' | LicenseStatus>('TODOS');
@@ -164,22 +168,30 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
     }
   }, [activeEmployeeNumber]);
 
-  const loadRequests = async (empNum: string) => {
+  const loadRequests = async (queryNum: string) => {
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
-      const agent = await dataService.verifyAgent(empNum);
+      const agent = await dataService.verifyAgent(queryNum);
       if (!agent) {
-        setErrorMessage('No se encontró ningún agente con el número de empleado ingresado.');
+        setErrorMessage('No se encontró ningún agente con el número de legajo o DNI ingresado.');
         setRequests([]);
+        setSisoLicenses([]);
         setAgentInfo(null);
         return;
       }
 
       setAgentInfo(agent);
-      const list = await dataService.getRequestsByEmployee(empNum);
+      const list = await dataService.getRequestsByEmployee(agent.employeeNumber);
       setRequests(list);
+
+      // Consulta aislada de licencias de SISO exclusivamente por DNI o legajo
+      const sisoList = dataService.getSisoLicensesByAgent({
+        dni: agent.dni,
+        nroEmpleado: agent.employeeNumber
+      });
+      setSisoLicenses(sisoList);
     } catch (e) {
       setErrorMessage('Error al consultar las solicitudes. Intente nuevamente.');
     } finally {
@@ -190,7 +202,7 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!employeeInput.trim()) {
-      setErrorMessage('Por favor ingrese su número de empleado.');
+      setErrorMessage('Por favor ingrese su número de legajo o DNI.');
       return;
     }
     setActiveEmployeeNumber(employeeInput.trim());
@@ -200,6 +212,7 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
     setActiveEmployeeNumber(null);
     setEmployeeInput('');
     setRequests([]);
+    setSisoLicenses([]);
     setAgentInfo(null);
     setErrorMessage(null);
     setDeleteSuccessMsg(null);
@@ -341,24 +354,24 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7 space-y-5">
           <div>
             <h2 className="text-base font-bold text-slate-800">
-              Acceso a Mis Solicitudes
+              Consulta de Licencias y Trámites
             </h2>
             <p className="text-xs text-slate-500">
-              Ingrese su número de legajo/empleado para acceder únicamente a sus solicitudes personales.
+              Ingrese su número de legajo o su número de DNI para consultar sus solicitudes del colegio y auditorías de SISO.
             </p>
           </div>
 
           <form onSubmit={handleSearch} className="space-y-4">
             <div>
               <label htmlFor="empNumberSearch" className="block text-sm font-semibold text-slate-800 mb-1">
-                Número de empleado <span className="text-red-500">*</span>
+                Número de legajo o DNI <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
                   id="empNumberSearch"
                   type="text"
                   inputMode="numeric"
-                  placeholder="Ej: 1042 o 2045"
+                  placeholder="Ej: Legajo 1042 o DNI 35123456"
                   value={employeeInput}
                   onChange={(e) => {
                     setEmployeeInput(e.target.value);
@@ -432,23 +445,51 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
             </div>
           )}
 
-          {/* Filters Bar */}
-          <div className="flex flex-wrap items-center gap-2 pb-1">
-            <span className="text-xs font-semibold text-slate-500 mr-1">Filtrar estado:</span>
-            {(['TODOS', 'Pendiente', 'Autorizada', 'Justificada', 'Completada', 'Rechazada'] as const).map((st) => (
-              <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                  statusFilter === st
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {st}
-              </button>
-            ))}
+          {/* Sub-tabs: Solicitudes del Colegio vs Auditorías Médicas SISO */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
+            <button
+              onClick={() => setConsultTab('internas')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                consultTab === 'internas'
+                  ? 'bg-white text-blue-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Solicitudes del Colegio ({requests.length})</span>
+            </button>
+            <button
+              onClick={() => setConsultTab('siso')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                consultTab === 'siso'
+                  ? 'bg-white text-emerald-800 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Activity className="w-4 h-4 text-emerald-600" />
+              <span>Auditorías Médicas SISO ({sisoLicenses.length})</span>
+            </button>
           </div>
+
+          {consultTab === 'internas' ? (
+            <>
+              {/* Filters Bar */}
+              <div className="flex flex-wrap items-center gap-2 pb-1">
+                <span className="text-xs font-semibold text-slate-500 mr-1">Filtrar estado:</span>
+                {(['TODOS', 'Pendiente', 'Autorizada', 'Justificada', 'Completada', 'Rechazada'] as const).map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setStatusFilter(st)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                      statusFilter === st
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
 
           {/* Requests Content (Section 30: Tarjetas / Tabla Responsive) */}
           {filteredRequests.length === 0 ? (
@@ -647,8 +688,114 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
               })}
             </div>
           )}
+        </>
+      ) : (
+        /* Contenido de SISO (Auditoría Médica Oficial) */
+        <div className="space-y-4">
+          <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs text-emerald-950 flex items-center justify-between">
+            <div>
+              <span className="font-bold">Licencias Médicas Registradas en SISO</span>
+              <span className="block text-[11px] text-emerald-800 mt-0.5">
+                Historial oficial de auditoría médica para Legajo: {agentInfo?.employeeNumber} · DNI: {agentInfo?.dni}
+              </span>
+            </div>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900">
+              {sisoLicenses.length} registradas
+            </span>
+          </div>
+
+          {sisoLicenses.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-2">
+              <Activity className="w-8 h-8 text-slate-300 mx-auto" />
+              <h4 className="font-bold text-sm text-slate-700">No se registran licencias en SISO</h4>
+              <p className="text-xs text-slate-400">
+                No constan auditorías médicas registradas en la plataforma provincial SISO para su legajo o DNI.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {sisoLicenses.map((s) => {
+                const justificaStatus = (s.justifica || '').toUpperCase();
+                const isJustificado = justificaStatus === 'JUSTIFICADO';
+                const isInjustificado = justificaStatus === 'INJUSTIFICADO';
+
+                return (
+                  <div
+                    key={s.id}
+                    className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs hover:border-emerald-200 transition-all space-y-3"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-slate-900">
+                            {s.tipo}
+                          </span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">
+                            SISO #{s.id}
+                          </span>
+                        </div>
+                        <span className="text-xs text-slate-500 font-semibold block mt-0.5">
+                          {s.codLicencia || s.cod_licencia}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                          isJustificado
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : isInjustificado
+                            ? 'bg-rose-50 text-rose-800 border-rose-200'
+                            : 'bg-amber-50 text-amber-800 border-amber-200'
+                        }`}>
+                          {isJustificado ? (
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          ) : isInjustificado ? (
+                            <XCircle className="w-3 h-3 text-rose-600" />
+                          ) : (
+                            <Clock className="w-3 h-3 text-amber-600" />
+                          )}
+                          <span>{s.justifica || 'SIN AUDITAR'}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-slate-400 font-medium">Período:</span>{' '}
+                        <span className="font-bold text-slate-800">
+                          {s.desde || s.fecha_desde} al {s.hasta || s.fecha_hasta} ({s.dias} días)
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium">Fecha de Carga:</span>{' '}
+                        <span className="font-semibold text-slate-700">{s.carga}</span>
+                      </div>
+
+                      {s.medicoInterviniente && (
+                        <div className="sm:col-span-2">
+                          <span className="text-slate-400 font-medium">Médico:</span>{' '}
+                          <span className="text-slate-700">
+                            {s.medicoInterviniente} {s.matriculaMedicoInterviniente ? `(Mat: ${s.matriculaMedicoInterviniente})` : ''}
+                          </span>
+                        </div>
+                      )}
+
+                      {s.auditor && (
+                        <div className="sm:col-span-2">
+                          <span className="text-slate-400 font-medium">Auditor:</span>{' '}
+                          <span className="text-slate-700">{s.auditor}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
+    </div>
+  )}
 
       {/* CONFIRMATION DIALOG FOR DELETION (Section 31) */}
       {/* "Cuando el agente intente eliminar una solicitud permitida, solicitar confirmación.

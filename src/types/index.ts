@@ -67,12 +67,26 @@ export interface PuestoAgenteAsignado {
 
 export interface Puesto {
   id: string;
+  puesto_id?: number;
   cargoId: string;
+  cargo_id?: number;
   descripcion?: string;
   agentesAsignados: PuestoAgenteAsignado[];
   activo: boolean;
   csvIndex?: number;
   createdAt?: string;
+  created_at?: string;
+}
+
+export interface PuestoCargo {
+  puestos_cargos_id: number;
+  puesto_id: number;
+  agente_id: number;
+  orden: number;
+  sit_revista: string;
+  fecha_alta?: string;
+  activo: boolean;
+  detalle?: string;
 }
 
 export interface AssignedPost {
@@ -86,40 +100,61 @@ export interface AssignedPost {
 
 export interface Agent {
   id: string;
+  agente_id?: number;
+  apellido?: string;
   apellidos: string;
+  nombre?: string;
   nombres: string;
   fullName: string;
   employeeNumber: string;
+  legajo?: number | string;
   dni: string;
+  dni_number?: number;
   telefono: string;
   email: string;
   fechaNacimiento: string;
+  fecha_nac?: string;
   lugarNacimiento: string;
+  lugar_nacimiento?: string;
+  domicilio?: string;
+  titulo?: string;
   activo: boolean;
   hasAssignedPost: boolean;
   posts?: AssignedPost[];
   createdAt?: string;
+  created_at?: string;
 }
 
 export interface LicenseType {
   id: string;
+  tipo_licencia_id?: number;
   code: string;
+  codigo?: string;
   name: string;
-  category: 'Corta duración' | 'Larga duración' | 'Especial';
+  nombre?: string;
+  category: 'Corta duración' | 'Larga duración' | 'Especial' | string;
+  categoria?: string;
   sinLimite?: boolean;
-  maxDaysPerYear?: number;
-  diasTotales?: number;
-  diasMensuales?: number;
+  sin_limite?: boolean;
+  maxDaysPerYear?: number | null;
+  max_dias_anio?: number | null;
+  diasTotales?: number | null;
+  diasMensuales?: number | null;
   tipoDias?: 'habiles' | 'continuos';
-  maxConsecutiveDays?: number;
-  maxUsagePerYear?: number;
+  maxConsecutiveDays?: number | null;
+  max_dias_seguidos?: number | null;
+  maxUsagePerYear?: number | null;
   relacionadoConObligaciones?: boolean;
   requiresJustification: boolean;
+  requiere_justificacion?: boolean;
   justificationHelpText?: string;
   requiresObligations: boolean;
+  requiere_obligaciones?: boolean;
   obligationsHelpText?: string;
   description: string;
+  descripccion?: string;
   active: boolean;
+  activo?: boolean;
   csvIndex?: number;
 }
 
@@ -166,27 +201,38 @@ export interface LicenseRequest {
 }
 
 export interface SisoLicense {
+  siso_id?: number | string;
   id: string;
+  nro_empleado?: string | number;
   nroEmpleado: string;
   dni: string;
   nombre: string;
   email: string;
   tipo: string;
   carga: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
   desde: string;
   hasta: string;
-  dias: number;
+  dias: number | string;
   justifica: string;
+  cod_licencia?: string | number;
   codLicencia: string;
-  fechaAlta: string;
+  fecha_alta?: string;
+  fechaAlta?: string;
   auditor?: string;
   patologia?: string;
+  fecha_auditoria?: string;
   fechaAuditoria?: string;
+  medico_interviniente?: string;
   medicoInterviniente?: string;
+  matricula_medico_interviniente?: string;
   matriculaMedicoInterviniente?: string;
+  establecimientos_o_sector?: string;
   establecimientosOSector?: string;
-  fechaImportacion: string;
-  importId: string;
+  fechaImportacion?: string;
+  importId?: string;
+  created_at?: string;
 }
 
 export interface SisoImportHistory {
@@ -197,7 +243,7 @@ export interface SisoImportHistory {
   registrosNuevos: number;
   registrosActualizados: number;
   usuario: string;
-  errores: string[];
+  errores?: string[];
 }
 
 export interface AuditLog {

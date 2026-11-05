@@ -21,18 +21,24 @@ import {
   WeeklyAbsenceRow, 
   LongLicenseItem,
   LicenseStatus,
-  HistorialEstadoSolicitud
+  HistorialEstadoSolicitud,
+  PuestoCargo
 } from '../types';
 import { SEED_CARGOS } from '../data/cargosData';
+import { SEED_AGENTES } from '../data/agentesData';
+import { SEED_TIPOS_LICENCIAS } from '../data/tiposLicenciasData';
+import { SEED_SISO_LICENSES } from '../data/sisoData';
+import { SEED_PUESTOS, SEED_PUESTOS_CARGOS } from '../data/puestosData';
 
-// Storage keys (v6 - Base de datos limpia y lista para sembrar desde CSV)
-const STORAGE_AGENTS = 'cpem_agents_v6';
+// Storage keys (v7 - Sembrado completo: Cargos, Agentes, Puestos Interinos, Tipos Licencias, SISO)
+const STORAGE_AGENTS = 'cpem_agents_v7';
 const STORAGE_CARGOS = 'cpem_cargos_v6';
-const STORAGE_PUESTOS = 'cpem_puestos_v6';
+const STORAGE_PUESTOS = 'cpem_puestos_v7';
+const STORAGE_PUESTOS_CARGOS = 'cpem_puestos_cargos_v7';
 const STORAGE_TYPES = 'cpem_license_types_v6';
 const STORAGE_REQUESTS = 'cpem_license_requests_v6';
-const STORAGE_SISO_LICENSES = 'cpem_siso_licenses_v6';
-const STORAGE_SISO_IMPORTS = 'cpem_siso_imports_v6';
+const STORAGE_SISO_LICENSES = 'cpem_siso_licenses_v7';
+const STORAGE_SISO_IMPORTS = 'cpem_siso_imports_v7';
 const STORAGE_AUDIT_LOGS = 'cpem_audit_logs_v6';
 
 /**
@@ -333,18 +339,31 @@ export function formatDateTimeDMY(dateInput?: string | Date | null): string {
   return `${day}-${month}-${year} ${hours}:${mins} hs`;
 }
 
-// Base de datos: Cargos sembrados desde CSV (424 registros)
-export const INITIAL_AGENTS: Agent[] = [];
+// Base de datos oficial sembrada: Cargos (424), Agentes (512), Puestos (424), Puestos_Cargos Interinos (421), Tipos de Licencias (230), SISO (4.329)
+export const INITIAL_AGENTS: Agent[] = [...SEED_AGENTES];
 export const INITIAL_CARGOS: Cargo[] = [...SEED_CARGOS];
-export const INITIAL_PUESTOS: Puesto[] = [];
-export const INITIAL_LICENSE_TYPES: LicenseType[] = [];
-export const INITIAL_SISO_LICENSES: SisoLicense[] = [];
-export const INITIAL_SISO_IMPORTS: SisoImportHistory[] = [];
+export const INITIAL_PUESTOS: Puesto[] = [...SEED_PUESTOS];
+export const INITIAL_PUESTOS_CARGOS: PuestoCargo[] = [...SEED_PUESTOS_CARGOS];
+export const INITIAL_LICENSE_TYPES: LicenseType[] = [...SEED_TIPOS_LICENCIAS];
+export const INITIAL_SISO_LICENSES: SisoLicense[] = [...SEED_SISO_LICENSES];
+export const INITIAL_SISO_IMPORTS: SisoImportHistory[] = [
+  {
+    id: 'siso-seed-cpe-2026',
+    fecha: '2026-11-04T00:00:00.000Z',
+    nombreArchivo: '1793794663.csv (Auditorías SISO Oficiales)',
+    cantidadDetectados: 4329,
+    registrosNuevos: 4329,
+    registrosActualizados: 0,
+    usuario: 'cpem25oficial@gmail.com',
+    errores: [],
+  },
+];
 
 class DataService {
   private agents: Agent[] = [];
   private cargos: Cargo[] = [];
   private puestos: Puesto[] = [];
+  private puestosCargos: PuestoCargo[] = [];
   private licenseTypes: LicenseType[] = [];
   private requests: LicenseRequest[] = [];
   private sisoLicenses: SisoLicense[] = [];
@@ -361,10 +380,12 @@ class DataService {
       const storedAgents = localStorage.getItem(STORAGE_AGENTS);
       if (storedAgents) {
         const parsed: Agent[] = JSON.parse(storedAgents);
-        const map = new Map<string, Agent>();
-        for (const a of INITIAL_AGENTS) map.set(a.id, a);
-        for (const a of parsed) map.set(a.id, a);
-        this.agents = Array.from(map.values());
+        if (parsed && Array.isArray(parsed) && parsed.length >= INITIAL_AGENTS.length && parsed.length > 0) {
+          this.agents = parsed;
+        } else {
+          this.agents = [...INITIAL_AGENTS];
+          this.saveAgents();
+        }
       } else {
         this.agents = [...INITIAL_AGENTS];
       }
@@ -395,6 +416,19 @@ class DataService {
         this.puestos = [...INITIAL_PUESTOS];
       }
 
+      const storedPuestosCargos = localStorage.getItem(STORAGE_PUESTOS_CARGOS);
+      if (storedPuestosCargos) {
+        const parsed: PuestoCargo[] = JSON.parse(storedPuestosCargos);
+        if (parsed && Array.isArray(parsed) && parsed.length >= INITIAL_PUESTOS_CARGOS.length) {
+          this.puestosCargos = parsed;
+        } else {
+          this.puestosCargos = [...INITIAL_PUESTOS_CARGOS];
+          this.savePuestosCargos();
+        }
+      } else {
+        this.puestosCargos = [...INITIAL_PUESTOS_CARGOS];
+      }
+
       const storedTypes = localStorage.getItem(STORAGE_TYPES);
       if (storedTypes) {
         const parsed: LicenseType[] = JSON.parse(storedTypes);
@@ -411,21 +445,27 @@ class DataService {
       const storedSiso = localStorage.getItem(STORAGE_SISO_LICENSES);
       if (storedSiso) {
         const parsed: SisoLicense[] = JSON.parse(storedSiso);
-        this.sisoLicenses = Array.isArray(parsed)
-          ? parsed.filter((s) => s.importId !== 'import-seed-1')
-          : [];
+        if (Array.isArray(parsed) && parsed.length >= INITIAL_SISO_LICENSES.length && parsed.length > 0) {
+          this.sisoLicenses = parsed.filter((s) => s.importId !== 'import-seed-1');
+        } else {
+          this.sisoLicenses = [...INITIAL_SISO_LICENSES];
+          this.saveSisoLicenses();
+        }
       } else {
-        this.sisoLicenses = [];
+        this.sisoLicenses = [...INITIAL_SISO_LICENSES];
       }
 
       const storedImports = localStorage.getItem(STORAGE_SISO_IMPORTS);
       if (storedImports) {
         const parsed: SisoImportHistory[] = JSON.parse(storedImports);
-        this.sisoImports = Array.isArray(parsed)
-          ? parsed.filter((i) => i.id !== 'import-seed-1')
-          : [];
+        if (Array.isArray(parsed) && parsed.length >= INITIAL_SISO_IMPORTS.length && parsed.length > 0) {
+          this.sisoImports = parsed.filter((i) => i.id !== 'import-seed-1');
+        } else {
+          this.sisoImports = [...INITIAL_SISO_IMPORTS];
+          this.saveSisoImports();
+        }
       } else {
-        this.sisoImports = [];
+        this.sisoImports = [...INITIAL_SISO_IMPORTS];
       }
 
       this.auditLogs = JSON.parse(localStorage.getItem(STORAGE_AUDIT_LOGS) || 'null') || [];
@@ -471,6 +511,9 @@ class DataService {
   }
   private savePuestos() {
     if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_PUESTOS, JSON.stringify(this.puestos));
+  }
+  private savePuestosCargos() {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_PUESTOS_CARGOS, JSON.stringify(this.puestosCargos));
   }
   private saveLicenseTypes() {
     if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_TYPES, JSON.stringify(this.licenseTypes));
@@ -526,7 +569,7 @@ class DataService {
 
       // 3. Sincronizar Agentes
       const agentSnap = await getDocs(collection(db, 'agents'));
-      if (!agentSnap.empty) {
+      if (!agentSnap.empty && agentSnap.size >= INITIAL_AGENTS.length) {
         const remoteAgents: Agent[] = [];
         agentSnap.forEach((docItem) => {
           remoteAgents.push(docItem.data() as Agent);
@@ -577,7 +620,7 @@ class DataService {
 
       // 6. Sincronizar Tipos de Licencias
       const typeSnap = await getDocs(collection(db, 'license_types'));
-      if (!typeSnap.empty) {
+      if (!typeSnap.empty && typeSnap.size >= INITIAL_LICENSE_TYPES.length) {
         const remoteTypes: LicenseType[] = [];
         typeSnap.forEach((docItem) => {
           remoteTypes.push(docItem.data() as LicenseType);
@@ -1038,6 +1081,10 @@ class DataService {
     return this.puestos;
   }
 
+  public getPuestosCargos(): PuestoCargo[] {
+    return this.puestosCargos;
+  }
+
   public getPuestoByCargoId(cargoId: string): Puesto | null {
     return this.puestos.find((p) => p.cargoId === cargoId) || null;
   }
@@ -1477,7 +1524,7 @@ class DataService {
       status: string;
     }>();
 
-    // 1. Solicitudes de licencias activas
+    // 1. Solicitudes de licencias internas activas del colegio (SISO se mantiene completamente aislado)
     for (const r of this.requests) {
       if (['Autorizada', 'Justificada', 'Completada', 'Descuento', 'Pendiente'].includes(r.status)) {
         if (r.dateFrom <= today && r.dateTo >= today) {
@@ -1494,22 +1541,22 @@ class DataService {
       }
     }
 
-    // 2. Licencias SISO activas
-    for (const s of this.sisoLicenses) {
-      if (s.desde <= today && s.hasta >= today) {
-        const info = {
-          source: 'SISO' as const,
-          licenseType: s.codLicencia ? `${s.codLicencia}` : s.tipo,
-          dateFrom: s.desde,
-          dateTo: s.hasta,
-          status: s.justifica || 'SISO',
-        };
-        if (s.nroEmpleado) map.set(s.nroEmpleado.trim().toLowerCase(), info);
-        if (s.dni) map.set(s.dni.replace(/\D/g, ''), info);
-      }
-    }
-
     return map;
+  }
+
+  /**
+   * Consulta licencias de SISO de forma aislada, buscando exclusivamente por DNI o número de empleado/legajo
+   */
+  public getSisoLicensesByAgent(query: { dni?: string; nroEmpleado?: string }): SisoLicense[] {
+    const dniClean = query.dni ? query.dni.replace(/\D/g, '') : '';
+    const legajoClean = query.nroEmpleado ? query.nroEmpleado.trim().toLowerCase() : '';
+    if (!dniClean && !legajoClean) return [];
+
+    return this.sisoLicenses.filter((s) => {
+      const sDni = (s.dni || '').replace(/\D/g, '');
+      const sLegajo = ((s.nro_empleado ?? s.nroEmpleado ?? '') + '').trim().toLowerCase();
+      return (dniClean && sDni === dniClean) || (legajoClean && sLegajo === legajoClean);
+    });
   }
 
   /**
@@ -1749,42 +1796,52 @@ class DataService {
       const matriculaMedicoInterviniente = getField(row, 'MATRICULA_MEDICO_INTERVINIENTE', 'MATRICULA MEDICO INTERVINIENTE', 'MATRICULA');
       const establecimientosOSector = getField(row, 'ESTABLECIMIENTOS O SECTOR', 'ESTABLECIMIENTO', 'SECTOR') || 'CPEM N° 25';
 
-      // Verificar si ya existe
+      // El CSV de SISO siempre es el total acumulado: solo se cargan en la tabla las nuevas por ID
       const existingIdx = this.sisoLicenses.findIndex(
-        (lic) => lic.id === sisoId || (lic.nroEmpleado === nroEmpleado && lic.desde === desde && lic.hasta === hasta)
+        (lic) => lic.id === sisoId || (lic.siso_id && String(lic.siso_id) === String(sisoId))
       );
 
+      if (existingIdx !== -1) {
+        // Ya existe previamente en la tabla siso_licencias; se omite
+        continue;
+      }
+
       const sisoItem: SisoLicense = {
+        siso_id: !isNaN(Number(sisoId)) ? Number(sisoId) : sisoId,
         id: sisoId,
+        nro_empleado: nroEmpleado,
         nroEmpleado,
         dni,
         nombre,
         email,
         tipo,
-        carga: rawCarga || formatDMY(new Date().toISOString()),
-        desde,
-        hasta,
-        dias,
+        carga: rawCarga,
+        fecha_desde: rawDesde,
+        fecha_hasta: rawHasta,
+        desde: rawDesde,
+        hasta: rawHasta,
+        dias: rawDias || String(dias),
         justifica,
+        cod_licencia: codLicencia,
         codLicencia,
-        fechaAlta,
+        fecha_alta: rawFechaAlta,
+        fechaAlta: rawFechaAlta,
         auditor,
         patologia,
-        fechaAuditoria,
+        fecha_auditoria: rawFechaAuditoria,
+        fechaAuditoria: rawFechaAuditoria,
+        medico_interviniente: medicoInterviniente,
         medicoInterviniente,
+        matricula_medico_interviniente: matriculaMedicoInterviniente,
         matriculaMedicoInterviniente,
+        establecimientos_o_sector: establecimientosOSector,
         establecimientosOSector,
         fechaImportacion: new Date().toISOString(),
         importId,
       };
 
-      if (existingIdx !== -1) {
-        this.sisoLicenses[existingIdx] = sisoItem;
-        updated++;
-      } else {
-        this.sisoLicenses.unshift(sisoItem);
-        created++;
-      }
+      this.sisoLicenses.push(sisoItem);
+      created++;
     }
 
     this.saveSisoLicenses();
@@ -1969,15 +2026,10 @@ class DataService {
       return !(r.dateTo < mondayStr || r.dateFrom > fridayStr);
     });
 
-    // 2. SISO Licenses
-    const activeSiso = this.sisoLicenses.filter((s) => {
-      return !(s.hasta < mondayStr || s.desde > fridayStr);
-    });
-
     const rows: WeeklyAbsenceRow[] = [];
     const seenKeys = new Set<string>();
 
-    // Add Requests
+    // Solicitudes del colegio
     for (const r of activeRequests) {
       const dedupKey = `${r.employeeNumber}_${r.dateFrom}_${r.dateTo}`;
       if (seenKeys.has(dedupKey)) continue;
@@ -1994,39 +2046,12 @@ class DataService {
         uniqueKey: r.id,
         agentName: r.agentName,
         employeeNumber: r.employeeNumber,
-        cargoCursoSiso: r.source === 'SISO' ? `[SISO] ${r.postDescription}` : r.postDescription,
+        cargoCursoSiso: r.postDescription,
         source: r.source,
         licenseType: `${r.licenseTypeCode} - ${r.licenseTypeName}`,
         dateFrom: r.dateFrom,
         dateTo: r.dateTo,
         status: r.status,
-        days,
-      });
-    }
-
-    // Add SISO
-    for (const s of activeSiso) {
-      const dedupKey = `${s.nroEmpleado}_${s.desde}_${s.hasta}`;
-      if (seenKeys.has(dedupKey)) continue;
-      seenKeys.add(dedupKey);
-
-      const days = { lun: false, mar: false, mie: false, jue: false, vie: false };
-      for (const wDay of weekDays) {
-        if (wDay.dateStr >= s.desde && wDay.dateStr <= s.hasta) {
-          days[wDay.key] = true;
-        }
-      }
-
-      rows.push({
-        uniqueKey: s.id,
-        agentName: s.nombre,
-        employeeNumber: s.nroEmpleado,
-        cargoCursoSiso: `[SISO] ${s.establecimientosOSector || 'Personal CPEM'} (${s.tipo})`,
-        source: 'SISO',
-        licenseType: `${s.codLicencia} - ${s.tipo}`,
-        dateFrom: s.desde,
-        dateTo: s.hasta,
-        status: 'Justificada',
         days,
       });
     }
@@ -2066,26 +2091,6 @@ class DataService {
       }
     }
 
-    // From SISO
-    for (const s of this.sisoLicenses) {
-      const totalDays = calculateDaysBetween(s.desde, s.hasta);
-      if (totalDays > 15) {
-        items.push({
-          id: s.id,
-          agentName: s.nombre,
-          employeeNumber: s.nroEmpleado,
-          cargo: s.establecimientosOSector || 'Docente / Cargo',
-          curso: s.carga || 'Institucional',
-          licenseType: `${s.codLicencia} - ${s.tipo}`,
-          dateFrom: s.desde,
-          dateTo: s.hasta,
-          totalDays,
-          source: 'SISO',
-          status: 'Justificada',
-        });
-      }
-    }
-
     return items;
   }
 
@@ -2098,10 +2103,9 @@ class DataService {
     
     const pendingRequests = this.requests.filter((r) => r.status === 'Pendiente').length;
 
-    // Licencias vigentes hoy (SISO + Requests)
+    // Licencias vigentes hoy de solicitudes internas del colegio
     const activeLicensesToday = 
-      this.requests.filter((r) => ['Autorizada', 'Justificada', 'Completada', 'Descuento'].includes(r.status) && r.dateFrom <= today && r.dateTo >= today).length +
-      this.sisoLicenses.filter((s) => s.desde <= today && s.hasta >= today).length;
+      this.requests.filter((r) => ['Autorizada', 'Justificada', 'Completada', 'Descuento'].includes(r.status) && r.dateFrom <= today && r.dateTo >= today).length;
 
     const longLicensesCount = this.getLongLicenses().length;
 
