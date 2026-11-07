@@ -9,6 +9,7 @@ import {
   where 
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { supabase } from './supabaseClient';
 import { 
   Agent, 
   Cargo, 
@@ -536,105 +537,244 @@ class DataService {
     this.initialized = true;
 
     try {
-      // 1. Cargar Solicitudes de Licencia desde Firestore
-      const reqSnap = await getDocs(collection(db, 'license_requests'));
-      if (!reqSnap.empty) {
-        const remoteRequests: LicenseRequest[] = [];
-        reqSnap.forEach((docItem) => {
-          remoteRequests.push(docItem.data() as LicenseRequest);
-        });
-        // Merge with local requests
-        const reqMap = new Map<string, LicenseRequest>();
-        for (const r of this.requests) reqMap.set(r.id, r);
-        for (const r of remoteRequests) reqMap.set(r.id, r);
-        this.requests = Array.from(reqMap.values()).sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        this.saveRequests();
+      // 1. Sincronizar Agentes desde Supabase PostgreSQL
+      const { data: dbAgentes } = await supabase
+        .from('agentes')
+        .select('*')
+        .order('agente_id', { ascending: true });
+
+      if (dbAgentes && dbAgentes.length > 0) {
+        this.agents = dbAgentes.map((a: any) => ({
+          id: `ag-${a.agente_id}`,
+          agente_id: a.agente_id,
+          apellidos: a.apellido,
+          apellido: a.apellido,
+          nombres: a.nombre,
+          nombre: a.nombre,
+          fullName: `${a.apellido}, ${a.nombre}`,
+          employeeNumber: String(a.legajo),
+          legajo: a.legajo,
+          dni: String(a.dni),
+          telefono: a.telefono || '',
+          email: a.email || '',
+          fechaNacimiento: a.fecha_nac || '',
+          fecha_nac: a.fecha_nac || '',
+          lugarNacimiento: a.lugar_nacimiento || '',
+          lugar_nacimiento: a.lugar_nacimiento || '',
+          domicilio: a.domicilio || '',
+          titulo: a.titulo || '',
+          activo: a.activo !== false,
+          hasAssignedPost: false,
+          createdAt: a.created_at || new Date().toISOString(),
+        }));
+        this.saveAgents();
       }
 
-      // 2. Cargar Licencias SISO desde Firestore
-      const sisoSnap = await getDocs(collection(db, 'siso_licenses'));
-      if (!sisoSnap.empty) {
-        const remoteSiso: SisoLicense[] = [];
-        sisoSnap.forEach((docItem) => {
-          remoteSiso.push(docItem.data() as SisoLicense);
-        });
-        const sisoMap = new Map<string, SisoLicense>();
-        for (const s of this.sisoLicenses) sisoMap.set(s.id, s);
-        for (const s of remoteSiso) sisoMap.set(s.id, s);
-        this.sisoLicenses = Array.from(sisoMap.values());
+      // 2. Sincronizar Cargos desde Supabase PostgreSQL
+      const { data: dbCargos } = await supabase
+        .from('cargos')
+        .select('*')
+        .order('orden_visual', { ascending: true });
+
+      if (dbCargos && dbCargos.length > 0) {
+        this.cargos = dbCargos.map((c: any) => ({
+          id: `cargo-${c.cargo_id}`,
+          cargo_id: c.cargo_id,
+          secuencia: String(c.secuencia),
+          turno: c.turno === 'M' ? 'Mañana' : c.turno === 'T' ? 'Tarde' : c.turno === 'V' ? 'Vespertino' : 'Mañana',
+          turno_codigo: c.turno,
+          curso: `${c.curso}°`,
+          curso_raw: c.curso,
+          seccion: `Div. ${c.seccion}`,
+          seccion_raw: c.seccion,
+          descripcion: c.descripccion,
+          obligaciones: String(c.obligaciones || 1),
+          area: '',
+          horarios: [],
+          tieneArticulacion: c.tiene_art || false,
+          tiene_art: c.tiene_art || false,
+          activo: c.activo !== false,
+          ordenVisual: c.orden_visual || 1,
+          orden_visual: c.orden_visual || 1,
+          createdAt: c.created_at || new Date().toISOString(),
+        }));
+        this.saveCargos();
+      }
+
+      // 3. Sincronizar Puestos desde Supabase
+      const { data: dbPuestos } = await supabase
+        .from('puestos')
+        .select('*')
+        .order('puesto_id', { ascending: true });
+
+      if (dbPuestos && dbPuestos.length > 0) {
+        this.puestos = dbPuestos.map((p: any) => ({
+          id: `puesto-${p.puesto_id}`,
+          puesto_id: p.puesto_id,
+          cargoId: `cargo-${p.cargo_id}`,
+          cargo_id: p.cargo_id,
+          agentesAsignados: [],
+          activo: p.activo !== false,
+          createdAt: p.created_at || new Date().toISOString(),
+        }));
+      }
+
+      // 4. Sincronizar Puestos Cargos (Asignaciones Interinas / Titulares)
+      const { data: dbPC } = await supabase
+        .from('puestos_cargos')
+        .select('*')
+        .order('puestos_cargos_id', { ascending: true });
+
+      if (dbPC && dbPC.length > 0) {
+        this.puestosCargos = dbPC.map((pc: any) => ({
+          puestos_cargos_id: pc.puestos_cargos_id,
+          puesto_id: pc.puesto_id,
+          agente_id: pc.agente_id,
+          orden: pc.orden || 1,
+          sit_revista: pc.sit_revista || 'Interino',
+          fecha_alta: pc.fecha_alta,
+          activo: pc.activo !== false,
+          detalle: pc.detalle,
+        }));
+        this.savePuestosCargos();
+
+        for (const p of this.puestos) {
+          const asigs = this.puestosCargos.filter((pc) => pc.puesto_id === p.puesto_id && pc.activo);
+          p.agentesAsignados = asigs.map((asig) => ({
+            agenteId: `ag-${asig.agente_id}`,
+            orden: asig.orden,
+            fechaAsignacion: asig.fecha_alta || '2026-02-01',
+            situacionRevista: (asig.sit_revista as any) || 'Interino',
+            observacion: asig.detalle || undefined,
+          }));
+        }
+        this.savePuestos();
+      }
+
+      // 5. Sincronizar Tipos de Licencias
+      const { data: dbTypes } = await supabase
+        .from('tipos_licencias')
+        .select('*')
+        .order('tipo_licencia_id', { ascending: true });
+
+      if (dbTypes && dbTypes.length > 0) {
+        this.licenseTypes = dbTypes.map((t: any): LicenseType => ({
+          id: `type-${t.tipo_licencia_id}`,
+          tipo_licencia_id: t.tipo_licencia_id,
+          code: t.codigo || '',
+          name: t.nombre || '',
+          category: (t.categoria as any) || 'Corta duración',
+          sinLimite: t.sin_limite || false,
+          maxDaysPerYear: t.max_dias_anio,
+          maxConsecutiveDays: t.max_dias_seguidos,
+          requiresJustification: t.requiere_justificacion || false,
+          requiresObligations: t.requiere_obligaciones !== false,
+          description: t.descripccion || '',
+          active: t.activo !== false,
+        }));
+        this.saveLicenseTypes();
+      }
+
+      // 6. Sincronizar Solicitudes de Licencia
+      await this.refreshRequestsFromSupabase();
+
+      // Suscribirse en tiempo real para sincronizar licencias entre múltiples PCs automáticamente
+      supabase
+        .channel('solicitud_licencias_realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'solicitud_licencias' },
+          () => {
+            this.refreshRequestsFromSupabase();
+          }
+        )
+        .subscribe();
+
+      // 7. Sincronizar SISO Licencias (si hay registros en Supabase)
+      const { data: dbSiso } = await supabase
+        .from('siso_licencias')
+        .select('*')
+        .limit(5000);
+
+      if (dbSiso && dbSiso.length > 0) {
+        this.sisoLicenses = dbSiso.map((s: any) => ({
+          id: s.id,
+          siso_id: s.siso_id,
+          nro_empleado: s.nro_empleado,
+          nroEmpleado: s.nro_empleado,
+          dni: s.dni,
+          nombre: s.nombre,
+          email: s.email,
+          tipo: s.tipo,
+          carga: s.carga,
+          fecha_desde: s.fecha_desde,
+          fecha_hasta: s.fecha_hasta,
+          desde: s.fecha_desde,
+          hasta: s.fecha_hasta,
+          dias: s.dias,
+          justifica: s.justifica,
+          cod_licencia: s.cod_licencia ? String(s.cod_licencia) : '',
+          codLicencia: s.cod_licencia ? String(s.cod_licencia) : '',
+          fecha_alta: s.fecha_alta,
+          fechaAlta: s.fecha_alta,
+          auditor: s.auditor,
+          patologia: s.patologia,
+          fecha_auditoria: s.fecha_auditoria,
+          fechaAuditoria: s.fecha_auditoria,
+          medico_interviniente: s.medico_interviniente,
+          medicoInterviniente: s.medico_interviniente,
+          matricula_medico_interviniente: s.matricula_medico_interviniente,
+          matriculaMedicoInterviniente: s.matricula_medico_interviniente,
+          establecimientos_o_sector: s.establecimientos_o_sector,
+          establecimientosOSector: s.establecimientos_o_sector,
+          fechaImportacion: s.created_at || new Date().toISOString(),
+          importId: 'import-supabase',
+        }));
         this.saveSisoLicenses();
       }
-
-      // 3. Sincronizar Agentes
-      const agentSnap = await getDocs(collection(db, 'agents'));
-      if (!agentSnap.empty && agentSnap.size >= INITIAL_AGENTS.length) {
-        const remoteAgents: Agent[] = [];
-        agentSnap.forEach((docItem) => {
-          remoteAgents.push(docItem.data() as Agent);
-        });
-        const agentMap = new Map<string, Agent>();
-        for (const a of this.agents) agentMap.set(a.id, a);
-        for (const a of remoteAgents) agentMap.set(a.id, a);
-        this.agents = Array.from(agentMap.values());
-        this.saveAgents();
-      } else {
-        // Sembrar agentes iniciales en segundo plano
-        this.batchSeedCollection('agents', this.agents);
-      }
-
-      // 4. Sincronizar Cargos
-      const cargoSnap = await getDocs(collection(db, 'cargos'));
-      if (!cargoSnap.empty) {
-        const remoteCargos: Cargo[] = [];
-        cargoSnap.forEach((docItem) => {
-          remoteCargos.push(docItem.data() as Cargo);
-        });
-        const cargoMap = new Map<string, Cargo>();
-        for (const c of this.cargos) cargoMap.set(c.id, c);
-        for (const c of remoteCargos) cargoMap.set(c.id, c);
-        this.cargos = Array.from(cargoMap.values());
-        this.saveCargos();
-      } else {
-        // Sembrar cargos iniciales en segundo plano
-        this.batchSeedCollection('cargos', this.cargos);
-      }
-
-      // 5. Sincronizar Puestos
-      const puestoSnap = await getDocs(collection(db, 'puestos'));
-      if (!puestoSnap.empty) {
-        const remotePuestos: Puesto[] = [];
-        puestoSnap.forEach((docItem) => {
-          remotePuestos.push(docItem.data() as Puesto);
-        });
-        const puestoMap = new Map<string, Puesto>();
-        for (const p of this.puestos) puestoMap.set(p.id, p);
-        for (const p of remotePuestos) puestoMap.set(p.id, p);
-        this.puestos = Array.from(puestoMap.values());
-        this.savePuestos();
-      } else {
-        // Sembrar puestos iniciales en segundo plano
-        this.batchSeedCollection('puestos', this.puestos);
-      }
-
-      // 6. Sincronizar Tipos de Licencias
-      const typeSnap = await getDocs(collection(db, 'license_types'));
-      if (!typeSnap.empty && typeSnap.size >= INITIAL_LICENSE_TYPES.length) {
-        const remoteTypes: LicenseType[] = [];
-        typeSnap.forEach((docItem) => {
-          remoteTypes.push(docItem.data() as LicenseType);
-        });
-        const typeMap = new Map<string, LicenseType>();
-        for (const t of this.licenseTypes) typeMap.set(t.id, t);
-        for (const t of remoteTypes) typeMap.set(t.id, t);
-        this.licenseTypes = Array.from(typeMap.values());
-        this.saveLicenseTypes();
-      } else {
-        this.batchSeedCollection('license_types', this.licenseTypes);
-      }
     } catch (error) {
-      console.warn('Firestore initial synchronization notice:', error);
+      console.warn('Supabase initial synchronization notice:', error);
+    }
+  }
+
+  public async refreshRequestsFromSupabase() {
+    try {
+      const { data: dbReqs } = await supabase
+        .from('solicitud_licencias')
+        .select('*')
+        .order('solicitud_licencia_id', { ascending: false });
+
+      if (dbReqs) {
+        this.requests = dbReqs.map((row: any): LicenseRequest => {
+          const agent = this.agents.find((a) => a.agente_id === row.agente_id);
+          const type = this.licenseTypes.find((t) => t.tipo_licencia_id === row.tipo_licencia_id);
+          return {
+            id: row.codigo || `SOL-2026-${String(row.solicitud_licencia_id).padStart(3, '0')}`,
+            employeeNumber: String(agent?.legajo || agent?.employeeNumber || ''),
+            agentName: agent?.fullName || `Agente #${row.agente_id}`,
+            agentDni: String(agent?.dni || ''),
+            postsSelection: Array.isArray(row.puestos_id) ? row.puestos_id.join(', ') : 'ALL',
+            postDescription: 'Cargos asignados',
+            dateFrom: row.fecha_desde,
+            dateTo: row.fecha_hasta,
+            isArticulation: row.articulacion || false,
+            licenseTypeId: `type-${row.tipo_licencia_id}`,
+            licenseTypeCode: type?.code || '',
+            licenseTypeName: type?.name || '',
+            note: row.detalle_solicitud || undefined,
+            detail: row.detalle_solicitud || undefined,
+            justificationDataUrl: row.justificacion_url || undefined,
+            signatureDataUrl: row.signature_data_url || '',
+            status: (row.estado as LicenseStatus) || 'Pendiente',
+            createdAt: row.created_at || row.fecha_carga || new Date().toISOString(),
+            source: 'Solicitud',
+            historialEstados: [],
+          };
+        });
+        this.saveRequests();
+      }
+    } catch (e) {
+      console.warn('Error refreshing requests from Supabase:', e);
     }
   }
 
@@ -1190,6 +1330,31 @@ class DataService {
     this.requests.unshift(newReq);
     this.saveRequests();
 
+    // Persistir a Supabase PostgreSQL (solicitud_licencias)
+    const ag = this.agents.find(
+      (a) => a.employeeNumber === newReq.employeeNumber || (newReq.agentDni && a.dni === newReq.agentDni)
+    );
+    const agIdNum = ag?.agente_id || 1;
+    const typeIdNum = newReq.licenseTypeId ? parseInt(newReq.licenseTypeId.replace(/\D/g, ''), 10) : 1;
+
+    supabase.from('solicitud_licencias').insert({
+      agente_id: agIdNum,
+      tipo_licencia_id: typeIdNum,
+      puestos_id: [newReq.postsSelection || '1'],
+      fecha_desde: newReq.dateFrom,
+      fecha_hasta: newReq.dateTo,
+      articulacion: newReq.isArticulation || false,
+      obligaciones: parseInt(newReq.obligaciones || '1', 10) || 1,
+      detalle_solicitud: newReq.note || newReq.detail || '',
+      codigo: newReq.id,
+      estado: 'Pendiente',
+      signature_data_url: newReq.signatureDataUrl || null,
+      justificacion_url: newReq.justificationDataUrl || null,
+      fecha_carga: newReq.createdAt,
+    }).then(({ error }) => {
+      if (error) console.warn('Supabase insert solicitud_licencias notice:', error.message);
+    });
+
     // Persist to Firestore
     setDoc(doc(db, 'license_requests', newReq.id), newReq).catch((e) =>
       console.warn('Firestore setDoc failed:', e)
@@ -1218,6 +1383,15 @@ class DataService {
     if (index === -1) throw new Error('Solicitud no encontrada.');
     this.requests[index] = { ...this.requests[index], ...updates };
     this.saveRequests();
+    
+    // Update Supabase PostgreSQL
+    supabase.from('solicitud_licencias').update({
+      estado: updates.status,
+      detalle_solicitud: updates.note || updates.detail,
+    }).eq('codigo', id).then(({ error }) => {
+      if (error) console.warn('Supabase update solicitud_licencias notice:', error.message);
+    });
+
     setDoc(doc(db, 'license_requests', id), this.requests[index], { merge: true }).catch((e) =>
       console.warn('Firestore updateLicenseRequest failed:', e)
     );
@@ -1251,6 +1425,18 @@ class DataService {
     req.historialEstados.unshift(historyEntry);
 
     this.saveRequests();
+
+    // Actualizar en Supabase PostgreSQL (solicitud_licencias)
+    supabase.from('solicitud_licencias')
+      .update({
+        estado: newStatus,
+        detalle_estado: detalleObservacion.trim() || null,
+      })
+      .eq('codigo', req.id)
+      .then(({ error }) => {
+        if (error) console.warn('Supabase update solicitud_licencias notice:', error.message);
+      });
+
     setDoc(doc(db, 'license_requests', req.id), req).catch((e) =>
       console.warn('Firestore updateRequestStatus failed:', e)
     );
@@ -1750,6 +1936,7 @@ class DataService {
     let created = 0;
     let updated = 0;
     let detected = 0;
+    const newSisoItemsToInsert: SisoLicense[] = [];
 
     for (let i = 0; i < dataRows.length; i++) {
       const line = dataRows[i];
@@ -1842,6 +2029,37 @@ class DataService {
 
       this.sisoLicenses.push(sisoItem);
       created++;
+      newSisoItemsToInsert.push(sisoItem);
+    }
+
+    if (newSisoItemsToInsert.length > 0) {
+      const dbRows = newSisoItemsToInsert.map((s) => ({
+        id: s.id,
+        nro_empleado: s.nro_empleado,
+        dni: s.dni,
+        nombre: s.nombre,
+        email: s.email,
+        tipo: s.tipo,
+        carga: s.carga,
+        fecha_desde: s.fecha_desde,
+        fecha_hasta: s.fecha_hasta,
+        dias: s.dias,
+        justifica: s.justifica,
+        cod_licencia: s.cod_licencia ? parseInt(String(s.cod_licencia), 10) : null,
+        fecha_alta: s.fecha_alta,
+        auditor: s.auditor,
+        patologia: s.patologia,
+        fecha_auditoria: s.fecha_auditoria,
+        medico_interviniente: s.medico_interviniente,
+        matricula_medico_interviniente: s.matricula_medico_interviniente,
+        establecimientos_o_sector: s.establecimientos_o_sector,
+      }));
+      (async () => {
+        for (let idx = 0; idx < dbRows.length; idx += 200) {
+          const chunk = dbRows.slice(idx, idx + 200);
+          await supabase.from('siso_licencias').insert(chunk);
+        }
+      })().catch((e) => console.warn('Supabase siso insert notice:', e));
     }
 
     this.saveSisoLicenses();

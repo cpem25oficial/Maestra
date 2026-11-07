@@ -224,6 +224,7 @@ export default function App() {
       <Navbar
         activeTab={publicTab}
         onSelectTab={setPublicTab}
+        onNavigateToAdmin={navigateToAdmin}
       />
 
       {/* Main Container: Strictly Formulario de Solicitar Licencia y Mis Solicitudes */}

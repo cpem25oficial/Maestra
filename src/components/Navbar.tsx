@@ -1,16 +1,18 @@
 import React from 'react';
-import { FileEdit, FolderClock, School } from 'lucide-react';
+import { FileEdit, FolderClock, School, Lock } from 'lucide-react';
 
 export type ActiveTab = 'solicitar' | 'mis-solicitudes';
 
 interface NavbarProps {
   activeTab: ActiveTab;
   onSelectTab: (tab: ActiveTab) => void;
+  onNavigateToAdmin?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ 
   activeTab, 
-  onSelectTab 
+  onSelectTab,
+  onNavigateToAdmin
 }) => {
   return (
     <>
@@ -32,32 +34,48 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Desktop Navigation Tabs: ONLY 2 REQUESTED TABS */}
-          <nav className="hidden sm:flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
-            <button
-              onClick={() => onSelectTab('solicitar')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'solicitar'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <FileEdit className="w-4 h-4" />
-              <span>Solicitar licencia</span>
-            </button>
+          {/* Right Header Navigation & Actions */}
+          <div className="flex items-center gap-2">
+            {/* Desktop Navigation Tabs: ONLY 2 REQUESTED TABS */}
+            <nav className="hidden sm:flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
+              <button
+                onClick={() => onSelectTab('solicitar')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'solicitar'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <FileEdit className="w-4 h-4" />
+                <span>Solicitar licencia</span>
+              </button>
 
-            <button
-              onClick={() => onSelectTab('mis-solicitudes')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'mis-solicitudes'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <FolderClock className="w-4 h-4" />
-              <span>Consultar licencias</span>
-            </button>
-          </nav>
+              <button
+                onClick={() => onSelectTab('mis-solicitudes')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'mis-solicitudes'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <FolderClock className="w-4 h-4" />
+                <span>Consultar licencias</span>
+              </button>
+            </nav>
+
+            {/* Mobile Admin Access Icon */}
+            {onNavigateToAdmin && (
+              <button
+                type="button"
+                onClick={onNavigateToAdmin}
+                className="sm:hidden w-10 h-10 rounded-xl border border-slate-200 bg-slate-100/80 hover:bg-slate-200 text-slate-700 hover:text-blue-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95"
+                title="Ingresar al Panel de Administración"
+                aria-label="Ingresar al Panel de Administración"
+              >
+                <Lock className="w-4 h-4 text-slate-700" />
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
