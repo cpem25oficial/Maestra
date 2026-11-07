@@ -41,14 +41,14 @@ cp .env.example .env
 Abre el archivo `.env` en tu editor y completa tus variables de Firebase (o coloca tu archivo `firebase-applet-config.json` en la raíz de tu proyecto local):
 
 ```env
-# Configuración del Cliente Firebase
-VITE_FIREBASE_API_KEY="AIzaSyDx1bJ8JUk-rRyV2-U44-Fq4OwD_mwOGL8"
-VITE_FIREBASE_AUTH_DOMAIN="gen-lang-client-0302919713.firebaseapp.com"
-VITE_FIREBASE_PROJECT_ID="gen-lang-client-0302919713"
-VITE_FIREBASE_STORAGE_BUCKET="gen-lang-client-0302919713.firebasestorage.app"
-VITE_FIREBASE_MESSAGING_SENDER_ID="769743112053"
-VITE_FIREBASE_APP_ID="1:769743112053:web:dbcb5747ec96639df2b53c"
-VITE_FIREBASE_FIRESTORE_DATABASE_ID="ai-studio-d7258386-3f0d-4c10-bc1f-4315081542ab"
+# Configuración del Cliente Firebase (opcional)
+VITE_FIREBASE_API_KEY="YOUR_API_KEY"
+VITE_FIREBASE_AUTH_DOMAIN="YOUR_PROJECT_ID.firebaseapp.com"
+VITE_FIREBASE_PROJECT_ID="YOUR_PROJECT_ID"
+VITE_FIREBASE_STORAGE_BUCKET="YOUR_PROJECT_ID.firebasestorage.app"
+VITE_FIREBASE_MESSAGING_SENDER_ID="YOUR_SENDER_ID"
+VITE_FIREBASE_APP_ID="YOUR_APP_ID"
+VITE_FIREBASE_FIRESTORE_DATABASE_ID="YOUR_DATABASE_ID"
 ```
 
 > **Nota de Seguridad:** El archivo `.env` y `firebase-applet-config.json` están incluidos en `.gitignore`, por lo que nunca se subirán a GitHub si haces commits.

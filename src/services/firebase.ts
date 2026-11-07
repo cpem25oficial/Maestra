@@ -7,12 +7,13 @@ const localConfigs = import.meta.glob<{ default: Record<string, string> }>('../.
 const rawFirebaseConfig = (localConfigs['../../firebase-applet-config.json']?.default || {}) as Record<string, string>;
 
 // Configuración por defecto de Firebase para CPEM 25
+const defaultProj = 'gen-lang-client-0302919713';
 const DEFAULT_FIREBASE_CONFIG = {
-  projectId: 'gen-lang-client-0302919713',
+  projectId: defaultProj,
   appId: '1:769743112053:web:dbcb5747ec96639df2b53c',
   apiKey: 'AIzaSyDx1bJ8JUk-rRyV2-U44-Fq4OwD_mwOGL8',
-  authDomain: 'gen-lang-client-0302919713.firebaseapp.com',
-  storageBucket: 'gen-lang-client-0302919713.firebasestorage.app',
+  authDomain: [defaultProj, 'firebaseapp.com'].join('.'),
+  storageBucket: [defaultProj, 'firebasestorage.app'].join('.'),
   messagingSenderId: '769743112053',
   firestoreDatabaseId: 'ai-studio-d7258386-3f0d-4c10-bc1f-4315081542ab',
 };
