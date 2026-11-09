@@ -39,6 +39,7 @@ import { UsuariosModule } from './UsuariosModule';
 import { SuperadminArchivosModule } from './SuperadminArchivosModule';
 import { AsambleaModule } from './AsambleaModule';
 import { ArticulacionesModule } from './ArticulacionesModule';
+import { HorariosModule } from './HorariosModule';
 
 interface AdminLayoutProps {
   onSwitchToPublicPortal: () => void;
@@ -48,6 +49,7 @@ interface AdminLayoutProps {
 export type AdminTab = 
   | 'dashboard'
   | 'cargos'
+  | 'horarios'
   | 'solicitudes'
   | 'agentes'
   | 'siso'
@@ -107,6 +109,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const generalNavItems: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5 shrink-0" /> },
     { id: 'cargos', label: 'Cargos y Puestos', icon: <Briefcase className="w-5 h-5 shrink-0" /> },
+    { id: 'horarios', label: 'Asignar Horarios', icon: <Clock className="w-5 h-5 shrink-0" /> },
     { id: 'solicitudes', label: 'Solicitudes de Licencias', icon: <FileText className="w-5 h-5 shrink-0" /> },
     { id: 'agentes', label: 'Agentes', icon: <Users className="w-5 h-5 shrink-0" /> },
     { id: 'siso', label: 'SISO (Carga y Filtros)', icon: <FileSpreadsheet className="w-5 h-5 shrink-0" /> },
@@ -557,6 +560,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           {activeTab === 'agentes' && <AgentesModule />}
 
           {activeTab === 'cargos' && <CargosPuestosModule />}
+
+          {activeTab === 'horarios' && <HorariosModule />}
 
           {activeTab === 'solicitudes' && (
             <SolicitudesAdminModule

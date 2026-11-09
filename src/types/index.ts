@@ -24,10 +24,13 @@ export type DiaSemana = 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes'
 
 export interface Horario {
   id: string;
+  horario_id?: number;
+  cargo_id?: number;
   dia: DiaSemana;
   horaIngreso: string; // HH:mm
   horaSalida: string;  // HH:mm
   esRecurrente?: boolean;
+  articulacion?: boolean;
 }
 
 export interface Cargo {
@@ -48,6 +51,7 @@ export interface Cargo {
   tieneArticulacion: boolean;
   tiene_art?: boolean;
   horarioArticulacion?: Horario;
+  horariosArticulacion?: Horario[];
   activo: boolean;
   ordenVisual?: number; // Para ordenar y mover filas en el listado
   orden_visual?: number;

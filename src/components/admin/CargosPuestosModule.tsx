@@ -869,7 +869,7 @@ export const CargosPuestosModule: React.FC = () => {
             </div>
 
             {/* Horario de Articulación (Section 7 & 15: visualizado separado) */}
-            {selectedCargoDetail.tieneArticulacion && (
+            {(selectedCargoDetail.tieneArticulacion || selectedCargoDetail.tiene_art) && (
               <div className="p-3.5 bg-indigo-50 border border-indigo-200 rounded-xl text-xs space-y-1">
                 <span className="font-bold text-indigo-950 flex items-center gap-1.5">
                   <Layers className="w-4 h-4 text-indigo-600" />

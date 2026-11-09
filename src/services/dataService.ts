@@ -14,6 +14,8 @@ import {
   Agent, 
   Cargo, 
   Puesto, 
+  Horario,
+  DiaSemana,
   LicenseType, 
   LicenseRequest, 
   SisoLicense, 
@@ -570,34 +572,89 @@ class DataService {
         this.saveAgents();
       }
 
-      // 2. Sincronizar Cargos desde Supabase PostgreSQL
-      const { data: dbCargos } = await supabase
-        .from('cargos')
-        .select('*')
-        .order('orden_visual', { ascending: true });
+      // 2. Sincronizar Cargos y Horarios desde Supabase PostgreSQL
+      const [{ data: dbCargos }, { data: dbHorarios }] = await Promise.all([
+        supabase
+          .from('cargos')
+          .select('*')
+          .order('orden_visual', { ascending: true }),
+        supabase
+          .from('horarios_cargos')
+          .select('*')
+          .order('horario_id', { ascending: true })
+      ]);
+
+      const horariosByCargoId = new Map<number, any[]>();
+      if (dbHorarios && dbHorarios.length > 0) {
+        for (const h of dbHorarios) {
+          const cid = Number(h.cargo_id);
+          if (!horariosByCargoId.has(cid)) {
+            horariosByCargoId.set(cid, []);
+          }
+          horariosByCargoId.get(cid)!.push(h);
+        }
+      }
 
       if (dbCargos && dbCargos.length > 0) {
-        this.cargos = dbCargos.map((c: any) => ({
-          id: `cargo-${c.cargo_id}`,
-          cargo_id: c.cargo_id,
-          secuencia: String(c.secuencia),
-          turno: c.turno === 'M' ? 'Mañana' : c.turno === 'T' ? 'Tarde' : c.turno === 'V' ? 'Vespertino' : 'Mañana',
-          turno_codigo: c.turno,
-          curso: `${c.curso}°`,
-          curso_raw: c.curso,
-          seccion: `Div. ${c.seccion}`,
-          seccion_raw: c.seccion,
-          descripcion: c.descripccion,
-          obligaciones: String(c.obligaciones || 1),
-          area: '',
-          horarios: [],
-          tieneArticulacion: c.tiene_art || false,
-          tiene_art: c.tiene_art || false,
-          activo: c.activo !== false,
-          ordenVisual: c.orden_visual || 1,
-          orden_visual: c.orden_visual || 1,
-          createdAt: c.created_at || new Date().toISOString(),
-        }));
+        this.cargos = dbCargos.map((c: any) => {
+          const cargoHorariosList = horariosByCargoId.get(c.cargo_id) || [];
+          const regularHorarios = cargoHorariosList
+            .filter((h) => !h.articulacion)
+            .map((h) => ({
+              id: `horario-${h.horario_id}`,
+              horario_id: h.horario_id,
+              cargo_id: h.cargo_id,
+              dia: h.dia,
+              horaIngreso: (h.hora_desde || '').slice(0, 5),
+              horaSalida: (h.hora_hasta || '').slice(0, 5),
+              articulacion: false,
+            }));
+
+          const artHorarios = cargoHorariosList.filter((h) => h.articulacion);
+          const primerHorarioArt = artHorarios.length > 0 ? {
+            id: `horario-${artHorarios[0].horario_id}`,
+            horario_id: artHorarios[0].horario_id,
+            cargo_id: artHorarios[0].cargo_id,
+            dia: artHorarios[0].dia,
+            horaIngreso: (artHorarios[0].hora_desde || '').slice(0, 5),
+            horaSalida: (artHorarios[0].hora_hasta || '').slice(0, 5),
+            articulacion: true,
+          } : undefined;
+
+          const horariosArticulacionList = artHorarios.map((h) => ({
+            id: `horario-${h.horario_id}`,
+            horario_id: h.horario_id,
+            cargo_id: h.cargo_id,
+            dia: h.dia,
+            horaIngreso: (h.hora_desde || '').slice(0, 5),
+            horaSalida: (h.hora_hasta || '').slice(0, 5),
+            articulacion: true,
+          }));
+
+          return {
+            id: `cargo-${c.cargo_id}`,
+            cargo_id: c.cargo_id,
+            secuencia: String(c.secuencia),
+            turno: c.turno === 'M' ? 'Mañana' : c.turno === 'T' ? 'Tarde' : c.turno === 'V' ? 'Vespertino' : 'Mañana',
+            turno_codigo: c.turno,
+            curso: `${c.curso}°`,
+            curso_raw: c.curso,
+            seccion: `Div. ${c.seccion}`,
+            seccion_raw: c.seccion,
+            descripcion: c.descripccion,
+            obligaciones: String(c.obligaciones || 1),
+            area: '',
+            horarios: regularHorarios,
+            tieneArticulacion: c.tiene_art || artHorarios.length > 0,
+            tiene_art: c.tiene_art || artHorarios.length > 0,
+            horarioArticulacion: primerHorarioArt,
+            horariosArticulacion: horariosArticulacionList,
+            activo: c.activo !== false,
+            ordenVisual: c.orden_visual || 1,
+            orden_visual: c.orden_visual || 1,
+            createdAt: c.created_at || new Date().toISOString(),
+          };
+        });
         this.saveCargos();
       }
 
@@ -1192,6 +1249,151 @@ class DataService {
       console.warn('Firestore updateCargo sync failed:', e)
     );
     return this.cargos[index];
+  }
+
+  /**
+   * Guarda y sincroniza los horarios de un Cargo tanto en memoria/localStorage
+   * como en la base de datos PostgreSQL de Supabase (tablas cargos y horarios_cargos).
+   * 
+   * Requisito: Todos los cargos tienen un horario regular, pueden tener o no horarios de articulación.
+   */
+  public async saveCargoHorarios(
+    cargoId: string | number,
+    horarios: Horario[],
+    tieneArticulacion: boolean,
+    horarioArticulacion?: Horario | null,
+    horariosArticulacion?: Horario[]
+  ): Promise<{ success: boolean; error?: string }> {
+    const idStr = String(cargoId);
+    const cargo = this.cargos.find(
+      (c) => c.id === idStr || c.id === `cargo-${idStr}` || c.cargo_id === Number(idStr)
+    );
+
+    if (!cargo) {
+      return { success: false, error: `Cargo ${cargoId} no encontrado.` };
+    }
+
+    const numCargoId = cargo.cargo_id || Number(cargo.id.replace('cargo-', ''));
+
+    // Normalizar horarios regulares (articulacion = false)
+    const cleanRegular: Horario[] = horarios.map((h, idx) => ({
+      id: h.id || `h-${cargo.id}-${idx}-${Date.now()}`,
+      cargo_id: numCargoId,
+      dia: h.dia,
+      horaIngreso: h.horaIngreso,
+      horaSalida: h.horaSalida,
+      articulacion: false,
+    }));
+
+    // Normalizar horarios de articulación (articulacion = true)
+    let cleanArtList: Horario[] = [];
+    if (tieneArticulacion) {
+      if (horariosArticulacion && horariosArticulacion.length > 0) {
+        cleanArtList = horariosArticulacion.map((ha, idx) => ({
+          id: ha.id || `h-art-${cargo.id}-${idx}-${Date.now()}`,
+          cargo_id: numCargoId,
+          dia: ha.dia,
+          horaIngreso: ha.horaIngreso,
+          horaSalida: ha.horaSalida,
+          articulacion: true,
+        }));
+      } else if (horarioArticulacion && horarioArticulacion.dia && horarioArticulacion.horaIngreso) {
+        cleanArtList = [{
+          id: horarioArticulacion.id || `h-art-${cargo.id}-${Date.now()}`,
+          cargo_id: numCargoId,
+          dia: horarioArticulacion.dia,
+          horaIngreso: horarioArticulacion.horaIngreso,
+          horaSalida: horarioArticulacion.horaSalida || horarioArticulacion.horaIngreso,
+          articulacion: true,
+        }];
+      }
+    }
+
+    // Actualizar en el estado local
+    cargo.horarios = cleanRegular;
+    cargo.tieneArticulacion = tieneArticulacion;
+    cargo.tiene_art = tieneArticulacion;
+    cargo.horarioArticulacion = cleanArtList.length > 0 ? cleanArtList[0] : undefined;
+    cargo.horariosArticulacion = cleanArtList;
+
+    this.saveCargos();
+
+    // Persistir a Supabase
+    try {
+      if (numCargoId && !isNaN(numCargoId)) {
+        // 1. Actualizar bandera tiene_art en cargos
+        await supabase
+          .from('cargos')
+          .update({ tiene_art: tieneArticulacion })
+          .eq('cargo_id', numCargoId);
+
+        // 2. Eliminar horarios existentes en horarios_cargos para este cargo
+        await supabase
+          .from('horarios_cargos')
+          .delete()
+          .eq('cargo_id', numCargoId);
+
+        // 3. Insertar nuevos registros en horarios_cargos
+        const rowsToInsert = [
+          ...cleanRegular.map((h) => ({
+            cargo_id: numCargoId,
+            dia: h.dia,
+            hora_desde: h.horaIngreso.length === 5 ? `${h.horaIngreso}:00` : h.horaIngreso,
+            hora_hasta: h.horaSalida.length === 5 ? `${h.horaSalida}:00` : h.horaSalida,
+            articulacion: false,
+          })),
+          ...cleanArtList.map((h) => ({
+            cargo_id: numCargoId,
+            dia: h.dia,
+            hora_desde: h.horaIngreso.length === 5 ? `${h.horaIngreso}:00` : h.horaIngreso,
+            hora_hasta: h.horaSalida.length === 5 ? `${h.horaSalida}:00` : h.horaSalida,
+            articulacion: true,
+          })),
+        ];
+
+        if (rowsToInsert.length > 0) {
+          const { error: insErr } = await supabase
+            .from('horarios_cargos')
+            .insert(rowsToInsert);
+
+          if (insErr) {
+            console.warn('Advertencia al insertar en horarios_cargos:', insErr.message);
+            return { success: true, error: insErr.message };
+          }
+        }
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.warn('Error sincronizando horarios con Supabase:', err);
+      return { success: true, error: err?.message };
+    }
+  }
+
+  /**
+   * Asignación por lotes de horarios a múltiples cargos.
+   */
+  public async saveBatchHorarios(
+    updates: Array<{
+      cargoId: string | number;
+      horarios: Horario[];
+      tieneArticulacion: boolean;
+      horarioArticulacion?: Horario | null;
+      horariosArticulacion?: Horario[];
+    }>
+  ): Promise<{ success: boolean; count: number }> {
+    let successCount = 0;
+    for (const item of updates) {
+      const res = await this.saveCargoHorarios(
+        item.cargoId,
+        item.horarios,
+        item.tieneArticulacion,
+        item.horarioArticulacion,
+        item.horariosArticulacion
+      );
+      if (res.success) successCount++;
+    }
+    return { success: true, count: successCount };
   }
 
   // Section 21: "No eliminar cargos que tengan historial relacionado"
