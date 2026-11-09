@@ -495,7 +495,7 @@ export const CargosPuestosModule: React.FC = () => {
                               ) : null;
 
                               return (
-                                <React.Fragment key={asig.agenteId || idx}>
+                                <React.Fragment key={`asig-${cargo.id}-${asig.agenteId || idx}-${idx}`}>
                                   {idx > 0 && (
                                     <span className="text-slate-300 font-bold select-none">/</span>
                                   )}
@@ -859,7 +859,7 @@ export const CargosPuestosModule: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {selectedCargoDetail.horarios.map((h, i) => (
-                    <div key={i} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between font-mono">
+                    <div key={`cargo-detail-h-${selectedCargoDetail.id}-${i}`} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between font-mono">
                       <span className="font-bold text-slate-800">{h.dia}</span>
                       <span className="text-blue-700 font-semibold">{h.horaIngreso} a {h.horaSalida}</span>
                     </div>
@@ -911,7 +911,7 @@ export const CargosPuestosModule: React.FC = () => {
                       if (!ag) return null;
 
                       return (
-                        <div key={asig.agenteId} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs sm:text-sm">
+                        <div key={`puesto-asig-${asig.agenteId}-${idx}`} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs sm:text-sm">
                           <div className="flex items-center gap-2.5">
                             <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center font-mono">
                               {asig.orden}

@@ -733,7 +733,7 @@ export const HorariosModule: React.FC = () => {
                           {tieneHorarios ? (
                             cargo.horarios.map((h, i) => (
                               <span
-                                key={h.id || i}
+                                key={`h-chip-${cargo.id}-${h.id || i}`}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold shadow-2xs"
                               >
                                 <Clock className="w-3 h-3 text-emerald-600" />
@@ -797,13 +797,24 @@ export const HorariosModule: React.FC = () => {
                   >
                     Anterior
                   </button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, idx) => {
-                    let pageNum = currentPage - 2 + idx;
-                    if (pageNum < 1) pageNum = idx + 1;
-                    if (pageNum > totalPages) return null;
-                    return (
+                  {(() => {
+                    const maxButtons = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+                    let endPage = startPage + maxButtons - 1;
+
+                    if (endPage > totalPages) {
+                      endPage = totalPages;
+                      startPage = Math.max(1, endPage - maxButtons + 1);
+                    }
+
+                    const pageNumbers: number[] = [];
+                    for (let p = startPage; p <= endPage; p++) {
+                      pageNumbers.push(p);
+                    }
+
+                    return pageNumbers.map((pageNum) => (
                       <button
-                        key={pageNum}
+                        key={`page-btn-${pageNum}`}
                         onClick={() => setCurrentPage(pageNum)}
                         className={`w-8 h-8 rounded-lg font-bold transition-colors ${
                           currentPage === pageNum
@@ -813,8 +824,8 @@ export const HorariosModule: React.FC = () => {
                       >
                         {pageNum}
                       </button>
-                    );
-                  })}
+                    ));
+                  })()}
                   <button
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
@@ -1121,7 +1132,7 @@ export const HorariosModule: React.FC = () => {
                   <div className="space-y-2.5">
                     {editHorarios.map((h, idx) => (
                       <div
-                        key={h.id || idx}
+                        key={`edit-block-${idx}-${h.id || 'new'}`}
                         className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-wrap items-center gap-2.5"
                       >
                         {/* Day selector */}
