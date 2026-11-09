@@ -39,29 +39,27 @@ interface ModuloPreset {
 }
 
 const MODULOS_MANANA: ModuloPreset[] = [
-  { nombre: '1° Bloque (07:45 - 09:05)', horaIngreso: '07:45', horaSalida: '09:05', duracionMin: 80 },
-  { nombre: '2° Bloque (09:15 - 10:35)', horaIngreso: '09:15', horaSalida: '10:35', duracionMin: 80 },
-  { nombre: '3° Bloque (10:45 - 12:05)', horaIngreso: '10:45', horaSalida: '12:05', duracionMin: 80 },
-  { nombre: '4° Bloque (12:15 - 13:35)', horaIngreso: '12:15', horaSalida: '13:35', duracionMin: 80 },
-  { nombre: 'Mód. 1 (07:45 - 08:25)', horaIngreso: '07:45', horaSalida: '08:25', duracionMin: 40 },
-  { nombre: 'Mód. 2 (08:25 - 09:05)', horaIngreso: '08:25', horaSalida: '09:05', duracionMin: 40 },
-  { nombre: 'Mód. 3 (09:15 - 09:55)', horaIngreso: '09:15', horaSalida: '09:55', duracionMin: 40 },
-  { nombre: 'Mód. 4 (09:55 - 10:35)', horaIngreso: '09:55', horaSalida: '10:35', duracionMin: 40 },
-  { nombre: 'Mód. 5 (10:45 - 11:25)', horaIngreso: '10:45', horaSalida: '11:25', duracionMin: 40 },
-  { nombre: 'Mód. 6 (11:25 - 12:05)', horaIngreso: '11:25', horaSalida: '12:05', duracionMin: 40 },
+  { nombre: '1° Bloque (08:00 - 08:40)', horaIngreso: '08:00', horaSalida: '08:40', duracionMin: 40 },
+  { nombre: '2° Bloque (08:40 - 09:20)', horaIngreso: '08:40', horaSalida: '09:20', duracionMin: 40 },
+  // Recreo 1: 09:20 - 09:30 (10 min)
+  { nombre: '3° Bloque (09:30 - 10:10)', horaIngreso: '09:30', horaSalida: '10:10', duracionMin: 40 },
+  { nombre: '4° Bloque (10:10 - 10:50)', horaIngreso: '10:10', horaSalida: '10:50', duracionMin: 40 },
+  // Recreo 2: 10:50 - 11:00 (10 min)
+  { nombre: '5° Bloque (11:00 - 11:40)', horaIngreso: '11:00', horaSalida: '11:40', duracionMin: 40 },
+  { nombre: '6° Bloque (11:40 - 12:20)', horaIngreso: '11:40', horaSalida: '12:20', duracionMin: 40 },
+  { nombre: '7° Bloque (12:20 - 13:00)', horaIngreso: '12:20', horaSalida: '13:00', duracionMin: 40 },
 ];
 
 const MODULOS_TARDE: ModuloPreset[] = [
-  { nombre: '1° Bloque (13:30 - 14:50)', horaIngreso: '13:30', horaSalida: '14:50', duracionMin: 80 },
-  { nombre: '2° Bloque (15:00 - 16:20)', horaIngreso: '15:00', horaSalida: '16:20', duracionMin: 80 },
-  { nombre: '3° Bloque (16:30 - 17:50)', horaIngreso: '16:30', horaSalida: '17:50', duracionMin: 80 },
-  { nombre: '4° Bloque (18:00 - 19:20)', horaIngreso: '18:00', horaSalida: '19:20', duracionMin: 80 },
-  { nombre: 'Mód. 1 (13:30 - 14:10)', horaIngreso: '13:30', horaSalida: '14:10', duracionMin: 40 },
-  { nombre: 'Mód. 2 (14:10 - 14:50)', horaIngreso: '14:10', horaSalida: '14:50', duracionMin: 40 },
-  { nombre: 'Mód. 3 (15:00 - 15:40)', horaIngreso: '15:00', horaSalida: '15:40', duracionMin: 40 },
-  { nombre: 'Mód. 4 (15:40 - 16:20)', horaIngreso: '15:40', horaSalida: '16:20', duracionMin: 40 },
-  { nombre: 'Mód. 5 (16:30 - 17:10)', horaIngreso: '16:30', horaSalida: '17:10', duracionMin: 40 },
-  { nombre: 'Mód. 6 (17:10 - 17:50)', horaIngreso: '17:10', horaSalida: '17:50', duracionMin: 40 },
+  { nombre: '1° Bloque (13:30 - 14:10)', horaIngreso: '13:30', horaSalida: '14:10', duracionMin: 40 },
+  { nombre: '2° Bloque (14:10 - 14:50)', horaIngreso: '14:10', horaSalida: '14:50', duracionMin: 40 },
+  // Recreo 1: 14:50 - 15:00 (10 min)
+  { nombre: '3° Bloque (15:00 - 15:40)', horaIngreso: '15:00', horaSalida: '15:40', duracionMin: 40 },
+  { nombre: '4° Bloque (15:40 - 16:20)', horaIngreso: '15:40', horaSalida: '16:20', duracionMin: 40 },
+  // Recreo 2: 16:20 - 16:30 (10 min)
+  { nombre: '5° Bloque (16:30 - 17:10)', horaIngreso: '16:30', horaSalida: '17:10', duracionMin: 40 },
+  { nombre: '6° Bloque (17:10 - 17:50)', horaIngreso: '17:10', horaSalida: '17:50', duracionMin: 40 },
+  { nombre: '7° Bloque (17:50 - 18:30)', horaIngreso: '17:50', horaSalida: '18:30', duracionMin: 40 },
 ];
 
 const MODULOS_VESPERTINO: ModuloPreset[] = [
