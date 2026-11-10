@@ -374,7 +374,7 @@ export const HorariosModule: React.FC = () => {
 
     const isTarde = gridTurno === 'Tarde';
     const isVesper = gridTurno === 'Vespertino';
-    const timeSlots = isTarde ? MODULOS_TARDE.slice(0, 4) : isVesper ? MODULOS_VESPERTINO.slice(0, 3) : MODULOS_MANANA.slice(0, 4);
+    const timeSlots = isTarde ? MODULOS_TARDE : isVesper ? MODULOS_VESPERTINO : MODULOS_MANANA;
     const dias = DIAS_SEMANA.slice(0, 5); // Lunes a Viernes
 
     // Build matrix: [slotIndex][diaIndex] -> Cargo & Horario block
@@ -1096,7 +1096,7 @@ export const HorariosModule: React.FC = () => {
                     Atajos de módulos para Turno {editingCargo.turno}:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {currentTurnoPresets.slice(0, 4).map((preset) => (
+                    {currentTurnoPresets.map((preset) => (
                       <button
                         key={preset.nombre}
                         type="button"

@@ -49,6 +49,7 @@ export const CargosPuestosModule: React.FC = () => {
   // Assign agent modal state (Section 6 & 14: Botón "+")
   const [assigningPuesto, setAssigningPuesto] = useState<Puesto | null>(null);
   const [assignAgentId, setAssignAgentId] = useState('');
+  const [assignAgentSearch, setAssignAgentSearch] = useState('');
   const [assignSituacion, setAssignSituacion] = useState<'Titular' | 'Interino' | 'Suplente'>('Titular');
   const [assignError, setAssignError] = useState<string | null>(null);
 
@@ -104,14 +105,40 @@ export const CargosPuestosModule: React.FC = () => {
     e.stopPropagation();
     setAssigningPuesto(puesto);
     setAssignAgentId('');
+    setAssignAgentSearch('');
     setAssignSituacion('Titular');
     setAssignError(null);
   };
 
+  const assigningCargo = useMemo(
+    () => (assigningPuesto ? cargos.find((c) => c.id === assigningPuesto.cargoId) : null),
+    [assigningPuesto, cargos]
+  );
+
+  const selectedAssignAgent = useMemo(
+    () => agents.find((a) => a.id === assignAgentId),
+    [agents, assignAgentId]
+  );
+
+  const filteredAgentsToAssign = useMemo(() => {
+    const activeAgents = agents.filter((a) => a.activo);
+    if (!assignAgentSearch.trim()) {
+      return activeAgents.slice(0, 15);
+    }
+    const q = assignAgentSearch.toLowerCase().trim();
+    return activeAgents.filter((a) => {
+      const fullName = (a.fullName || `${a.apellidos} ${a.nombres}`).toLowerCase();
+      const legajo = String(a.legajo || a.employeeNumber || '').toLowerCase();
+      const dni = String(a.dni || '').toLowerCase();
+      const email = (a.email || '').toLowerCase();
+      return fullName.includes(q) || legajo.includes(q) || dni.includes(q) || email.includes(q);
+    }).slice(0, 30);
+  }, [agents, assignAgentSearch]);
+
   const handleConfirmAssign = (e: React.FormEvent) => {
     e.preventDefault();
     if (!assigningPuesto || !assignAgentId) {
-      setAssignError('Por favor seleccione un agente.');
+      setAssignError('Por favor seleccione un agente de la lista.');
       return;
     }
 
@@ -695,26 +722,38 @@ export const CargosPuestosModule: React.FC = () => {
         </div>
       )}
 
-      {/* ASSIGN AGENT MODAL (Section 6 & 14) */}
+      {/* ASSIGN AGENT MODAL (Section 6 & 14) - Dynamic Combobox Selector */}
       {assigningPuesto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2 text-slate-900">
-                <UserPlus className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-base">Asignar Agente al Puesto</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-4 animate-scale-up my-auto">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div>
+                <div className="flex items-center gap-2 text-slate-900">
+                  <UserPlus className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-bold text-base">Asignar Agente al Cargo</h3>
+                </div>
+                {assigningCargo && (
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <span className="px-1.5 py-0.2 rounded font-mono font-bold text-[10px] bg-slate-900 text-white">
+                      SEC. {assigningCargo.secuencia}
+                    </span>
+                    <span className="text-xs font-bold text-slate-700">
+                      {assigningCargo.descripcion}
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      ({assigningCargo.curso} {assigningCargo.seccion} • Turno {assigningCargo.turno})
+                    </span>
+                  </div>
+                )}
               </div>
               <button
+                type="button"
                 onClick={() => setAssigningPuesto(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            <p className="text-xs text-slate-500">
-              {assigningPuesto.descripcion || 'Puesto institucional'}. Puede asignar múltiples agentes que conservarán su orden de designación.
-            </p>
 
             {assignError && (
               <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-start gap-2">
@@ -724,23 +763,118 @@ export const CargosPuestosModule: React.FC = () => {
             )}
 
             <form onSubmit={handleConfirmAssign} className="space-y-4 text-xs sm:text-sm">
+              {/* SELECTOR DINÁMICO DE AGENTES */}
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-semibold text-slate-700 mb-1.5">
                   Seleccionar Agente <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={assignAgentId}
-                  onChange={(e) => setAssignAgentId(e.target.value)}
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                >
-                  <option value="">-- Seleccionar agente --</option>
-                  {agents.filter((a) => a.activo).map((ag) => (
-                    <option key={ag.id} value={ag.id}>
-                      {ag.fullName} (Legajo {ag.employeeNumber} - DNI {ag.dni})
-                    </option>
-                  ))}
-                </select>
+
+                {selectedAssignAgent ? (
+                  /* Agente seleccionado: Tarjeta de confirmación */
+                  <div className="p-3 bg-blue-50/80 border-2 border-blue-200 rounded-xl flex items-center justify-between gap-3 animate-fade-in">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
+                        {selectedAssignAgent.apellidos.charAt(0) || selectedAssignAgent.fullName.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 text-sm truncate">
+                            {selectedAssignAgent.fullName}
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                            Activo
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-600 font-mono mt-0.5">
+                          <span>Legajo: <strong className="text-slate-800">{selectedAssignAgent.employeeNumber || selectedAssignAgent.legajo}</strong></span>
+                          <span>•</span>
+                          <span>DNI: <strong className="text-slate-800">{selectedAssignAgent.dni}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAssignAgentId('');
+                        setAssignAgentSearch('');
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors shrink-0 flex items-center gap-1 shadow-2xs"
+                      title="Cambiar agente seleccionado"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Cambiar</span>
+                    </button>
+                  </div>
+                ) : (
+                  /* Selector dinámico con buscador interactivo en vivo */
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        autoFocus
+                        value={assignAgentSearch}
+                        onChange={(e) => setAssignAgentSearch(e.target.value)}
+                        placeholder="Escriba apellido, nombre, DNI o legajo..."
+                        className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      />
+                      {assignAgentSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setAssignAgentSearch('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                      <span>
+                        {assignAgentSearch.trim()
+                          ? `Coincidencias encontradas (${filteredAgentsToAssign.length}):`
+                          : 'Sugerencias rápidas (o escriba para filtrar):'}
+                      </span>
+                      <span className="font-mono text-slate-400">512 agentes registrados</span>
+                    </div>
+
+                    {/* Lista scrollable con resultados inmediatos */}
+                    <div className="max-h-52 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl bg-white shadow-2xs">
+                      {filteredAgentsToAssign.length === 0 ? (
+                        <div className="p-4 text-center text-slate-400 text-xs">
+                          No se encontraron agentes que coincidan con "{assignAgentSearch}".
+                        </div>
+                      ) : (
+                        filteredAgentsToAssign.map((ag) => (
+                          <button
+                            key={ag.id}
+                            type="button"
+                            onClick={() => {
+                              setAssignAgentId(ag.id);
+                              setAssignError(null);
+                            }}
+                            className="w-full px-3 py-2.5 text-left hover:bg-blue-50/70 transition-colors flex items-center justify-between gap-2 group cursor-pointer"
+                          >
+                            <div className="min-w-0">
+                              <div className="font-bold text-xs text-slate-900 group-hover:text-blue-700 truncate">
+                                {ag.fullName}
+                              </div>
+                              <div className="text-[11px] text-slate-500 font-mono flex items-center gap-2 mt-0.5">
+                                <span>Leg. {ag.employeeNumber || ag.legajo}</span>
+                                <span>•</span>
+                                <span>DNI {ag.dni}</span>
+                              </div>
+                            </div>
+                            <span className="text-[11px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 flex items-center gap-0.5">
+                              Seleccionar →
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -750,7 +884,7 @@ export const CargosPuestosModule: React.FC = () => {
                 <select
                   value={assignSituacion}
                   onChange={(e) => setAssignSituacion(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100 font-medium"
                 >
                   <option value="Titular">Titular</option>
                   <option value="Interino">Interino</option>
@@ -762,13 +896,14 @@ export const CargosPuestosModule: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAssigningPuesto(null)}
-                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50"
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md"
+                  disabled={!assignAgentId}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold shadow-md transition-all cursor-pointer"
                 >
                   Asignar Agente
                 </button>
