@@ -425,16 +425,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8 space-y-6">
       {/* Header Info */}
-      // <div className="space-y-1">
-      //   <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-      //     <FileCheck2 className="w-6 h-6 text-blue-600" />
-      //     Solicitar Licencia
-      //   </h1>
-      //   <p className="text-xs sm:text-sm text-slate-600">
-      //     Complete los formularios según corresponda.
-      //   </p>
-      // </div>
-
+      
       {/* STEP 1: Agente Identification (Section 27) */}
       {!currentAgent ? (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7 space-y-5">
