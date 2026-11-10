@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileEdit, FolderClock, School, Lock } from 'lucide-react';
+import { FileEdit, FolderClock, Lock } from 'lucide-react';
 
 export type ActiveTab = 'solicitar' | 'mis-solicitudes';
 
@@ -15,79 +15,102 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigateToAdmin
 }) => {
   return (
-    <>
-      {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          {/* Logo & School Name */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
-              <School className="w-5 h-5" />
-            </div>
+    <div className="w-full">
+      {/* HEADER EXACTO SEGÚN IMAGEN 1 (Fondo #2B3E4C, Color secundario #87b867) */}
+      <header className="max-w-4xl mx-auto px-4 pt-4 sm:pt-6">
+        <div className="bg-[#2B3E4C] text-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-lg border border-slate-700/40 relative overflow-hidden">
+          
+          {/* Fila superior: Logo oficial + Título */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 text-center sm:text-left">
+            <img 
+              src="https://cpem25.wordpress.com/wp-content/uploads/2024/11/logo-png.png?w=240&h=216" 
+              onError={(e) => { e.currentTarget.src = "/logo-cpem25.png"; }}
+              alt="Logo CPEM 25" 
+              className="h-14 sm:h-16 w-auto object-contain shrink-0" 
+            />
             <div>
-              <span className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight block leading-tight">
-                PORTAL DE AGENTES
-              </span>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                CPEM N° 25 — Gestión de Licencias
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
+                Sistema de Gestión de Licencias
+              </h1>
+              <span className="text-sm sm:text-base font-semibold text-white/90 block mt-0.5">
+                CPEM Nº 25
               </span>
             </div>
           </div>
 
-          {/* Right Header Navigation & Actions */}
-          <div className="flex items-center gap-2">
-            {/* Desktop Navigation Tabs: ONLY 2 REQUESTED TABS */}
-            <nav className="hidden sm:flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
-              <button
-                onClick={() => onSelectTab('solicitar')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'solicitar'
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <FileEdit className="w-4 h-4" />
-                <span>Solicitar licencia</span>
-              </button>
+          {/* Subtítulo: Complete los formularios según corresponda */}
+          <p className="text-slate-200 text-xs sm:text-sm font-medium text-center mt-3 sm:mt-4">
+            Complete los formularios según corresponda
+          </p>
 
-              <button
-                onClick={() => onSelectTab('mis-solicitudes')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'mis-solicitudes'
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <FolderClock className="w-4 h-4" />
-                <span>Consultar licencias</span>
-              </button>
-            </nav>
-
-            {/* Mobile Admin Access Icon */}
-            {onNavigateToAdmin && (
-              <button
-                type="button"
-                onClick={onNavigateToAdmin}
-                className="sm:hidden w-10 h-10 rounded-xl border border-slate-200 bg-slate-100/80 hover:bg-slate-200 text-slate-700 hover:text-blue-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95"
-                title="Ingresar al Panel de Administración"
-                aria-label="Ingresar al Panel de Administración"
-              >
-                <Lock className="w-4 h-4 text-slate-700" />
-              </button>
-            )}
+          {/* Enlace al Régimen de Licencias con icono informativo (i) */}
+          <div className="flex items-center justify-center gap-1.5 text-xs sm:text-sm text-center mt-2.5">
+            <span className="w-4 h-4 rounded-full bg-white text-[#2B3E4C] inline-flex items-center justify-center font-bold text-[10px] shrink-0 font-serif shadow-2xs">
+              i
+            </span>
+            <a 
+              href="https://www.neuquen.edu.ar/wp-content/uploads/2022/07/RegimenLicenciasJustificacionesFranquicias.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white underline underline-offset-2 hover:text-[#87b867] transition-colors"
+            >
+              Régimen de Licencias, Justificaciones y Franquicias Decreto Nº 1.429/73
+            </a>
           </div>
+
+          {/* Acceso administrativo discreto en la esquina superior para preservar funcionalidad */}
+          {onNavigateToAdmin && (
+            <button
+              type="button"
+              onClick={onNavigateToAdmin}
+              className="absolute top-3 right-3 p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              title="Acceso Administrativo"
+              aria-label="Acceso Administrativo"
+            >
+              <Lock className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Pestañas de navegación pública: Solicitar Licencia y Consultar Licencias */}
+        <div className="flex justify-center mt-4 sm:mt-5">
+          <nav className="inline-flex p-1 bg-white rounded-2xl shadow-xs border border-slate-200 gap-1.5">
+            <button
+              onClick={() => onSelectTab('solicitar')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'solicitar'
+                  ? 'bg-[#87b867] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-[#2B3E4C] hover:bg-slate-50'
+              }`}
+            >
+              <FileEdit className="w-4 h-4" />
+              <span>Solicitar licencia</span>
+            </button>
+
+            <button
+              onClick={() => onSelectTab('mis-solicitudes')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'mis-solicitudes'
+                  ? 'bg-[#87b867] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-[#2B3E4C] hover:bg-slate-50'
+              }`}
+            >
+              <FolderClock className="w-4 h-4" />
+              <span>Consultar licencias</span>
+            </button>
+          </nav>
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation Bar: ONLY 2 TABS */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-1.5 shadow-lg pb-safe">
+      {/* Barra de navegación inferior móvil */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#2B3E4C]/95 backdrop-blur-md border-t border-slate-700/60 px-3 py-1.5 shadow-xl pb-safe">
         <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
           <button
             onClick={() => onSelectTab('solicitar')}
             className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-semibold transition-colors ${
               activeTab === 'solicitar'
-                ? 'text-blue-600 bg-blue-50/80 font-bold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'text-white bg-[#87b867] font-bold shadow-xs'
+                : 'text-slate-300 hover:text-white'
             }`}
           >
             <FileEdit className="w-5 h-5 mb-0.5" />
@@ -98,8 +121,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onSelectTab('mis-solicitudes')}
             className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl text-xs font-semibold transition-colors ${
               activeTab === 'mis-solicitudes'
-                ? 'text-blue-600 bg-blue-50/80 font-bold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'text-white bg-[#87b867] font-bold shadow-xs'
+                : 'text-slate-300 hover:text-white'
             }`}
           >
             <FolderClock className="w-5 h-5 mb-0.5" />
@@ -107,6 +130,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 };

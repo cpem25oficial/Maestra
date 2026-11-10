@@ -331,7 +331,7 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <FolderClock className="w-6 h-6 text-blue-600" />
+            <FolderClock className="w-6 h-6 text-[#2B3E4C]" />
             Mis Solicitudes
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
@@ -342,7 +342,7 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
         {activeEmployeeNumber && (
           <button
             onClick={() => onGoToSolicitar(activeEmployeeNumber)}
-            className="inline-flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm shadow-xs transition-colors shrink-0"
+            className="inline-flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[#2B3E4C] hover:bg-[#1E2C36] text-white font-semibold text-xs sm:text-sm shadow-xs transition-colors shrink-0"
           >
             <span>+ Nueva Solicitud</span>
           </button>
@@ -377,13 +377,13 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
                     setEmployeeInput(e.target.value);
                     if (errorMessage) setErrorMessage(null);
                   }}
-                  className="w-full pl-4 pr-11 py-3 text-base rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all font-mono"
+                  className="w-full pl-4 pr-11 py-3 text-base rounded-xl border border-slate-300 focus:border-[#2B3E4C] focus:ring-4 focus:ring-[#87b867]/20 transition-all font-mono"
                   autoFocus
                 />
                 <button
                   type="submit"
                   disabled={isLoading || !employeeInput.trim()}
-                  className="absolute right-1.5 top-1.5 bottom-1.5 px-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors"
+                  className="absolute right-1.5 top-1.5 bottom-1.5 px-3.5 bg-[#2B3E4C] hover:bg-[#1E2C36] disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {isLoading ? (
                     <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" />
@@ -411,7 +411,7 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
           {/* Active Agent Card */}
           <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+              <div className="w-10 h-10 rounded-xl bg-[#2B3E4C]/10 text-[#2B3E4C] flex items-center justify-center font-bold text-sm">
                 {agentInfo?.fullName.charAt(0)}
               </div>
               <div>
@@ -426,7 +426,7 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
 
             <button
               onClick={handleClearAgent}
-              className="text-xs text-slate-500 hover:text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg px-2.5 py-1 transition-colors"
+              className="text-xs text-slate-500 hover:text-[#2B3E4C] border border-slate-200 hover:bg-slate-50 rounded-lg px-2.5 py-1 transition-colors cursor-pointer"
             >
               Cambiar legajo
             </button>
@@ -451,7 +451,7 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
               onClick={() => setConsultTab('internas')}
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                 consultTab === 'internas'
-                  ? 'bg-white text-blue-700 shadow-xs'
+                  ? 'bg-white text-[#2B3E4C] shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >

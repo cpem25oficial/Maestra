@@ -483,13 +483,13 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
                 <button
                   type="submit"
                   disabled={isVerifying || !employeeInput.trim()}
-                  className="absolute right-1.5 top-1.5 bottom-1.5 px-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors"
+                  className="absolute right-1.5 top-1.5 bottom-1.5 px-3.5 bg-[#2B3E4C] hover:bg-[#1E2C36] disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {isVerifying ? (
                     <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" />
                   ) : (
                     <>
-                      <Search className="w-3.5 h-3.5" />
+                      <Search className="w-3.5 h-3.5 text-[#87b867]" />
                       <span>Verificar</span>
                     </>
                   )}
@@ -509,7 +509,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
         /* STEP 2: Agent Verified & Form */
         <div className="space-y-6">
           {/* Agent Banner */}
-          <div className="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl text-white p-4 sm:p-5 shadow-md flex items-center justify-between">
+          <div className="bg-gradient-to-r from-[#2B3E4C] to-[#1E2C36] rounded-2xl text-white p-4 sm:p-5 shadow-md flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center font-bold text-lg border border-white/20">
                 {currentAgent.fullName.charAt(0)}
@@ -519,7 +519,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
                   <h3 className="font-bold text-base sm:text-lg leading-tight">
                     {currentAgent.fullName}
                   </h3>
-                  <span className="bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                  <span className="bg-[#87b867]/30 text-white border border-[#87b867]/50 text-[10px] font-semibold px-2 py-0.5 rounded-full">
                     Activo
                   </span>
                 </div>
@@ -1005,9 +1005,9 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 px-6 rounded-xl bg-[#2B3E4C] hover:bg-[#1E2C36] active:bg-[#152028] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-4 h-4 text-[#87b867]" />
                 <span>Revisar y Enviar Solicitud</span>
               </button>
             </div>
@@ -1127,7 +1127,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
                 type="button"
                 onClick={handleConfirmSubmit}
                 disabled={isSubmitting}
-                className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-md transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-3 px-4 rounded-xl bg-[#2B3E4C] hover:bg-[#1E2C36] text-white font-bold text-xs sm:text-sm shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isSubmitting ? (
                   <>
@@ -1136,7 +1136,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-4 h-4 text-[#87b867]" />
                     <span>Confirmar y enviar</span>
                   </>
                 )}

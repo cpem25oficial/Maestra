@@ -244,20 +244,43 @@ export default function App() {
         )}
       </main>
 
-      {/* Institutional Clean Footer with discreet link to private /admin */}
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500 hidden sm:block">
-        <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>
-            © 2026 CPEM N° 25 — Sistema Oficial de Licencias Docentes
-          </span>
-          <div className="flex items-center gap-2 text-slate-400 text-[11px]">
+      {/* Institutional Footer as shown in Image 2 */}
+      <footer className="py-8 sm:py-10 text-center text-xs sm:text-sm border-t border-slate-200/80 bg-white/40 mt-auto">
+        <div className="max-w-4xl mx-auto px-4 space-y-1.5 font-medium text-slate-600">
+          <p className="font-semibold text-slate-700 sm:text-base">
+            Centro Provincial de Enseñanza Media Nº 25
+          </p>
+          <p className="text-slate-500">
+            Ramos de Espejo 2550 | Neuquén Capital
+          </p>
+          <p className="text-slate-500 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            <a href="tel:02994331684" className="hover:text-[#87b867] transition-colors">
+              (0299) 4331684
+            </a>
+            <span>|</span>
+            <a href="mailto:cpem025@neuquen.edu.ar" className="hover:text-[#87b867] transition-colors">
+              cpem025@neuquen.edu.ar
+            </a>
+            <span>|</span>
+            <a
+              href="https://cpem25.wordpress.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#87b867] transition-colors"
+            >
+              cpem25.wordpress.com
+            </a>
+          </p>
+
+          {/* Acceso discreto para administración */}
+          <div className="pt-3">
             <a
               href="/admin"
               onClick={(e) => {
                 e.preventDefault();
                 navigateToAdmin();
               }}
-              className="hover:text-blue-600 font-semibold flex items-center gap-1 transition-colors"
+              className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-[#2B3E4C] transition-colors"
               title="Acceso restringido para Secretaría y Dirección"
             >
               <Lock className="w-3 h-3 text-slate-400" />
