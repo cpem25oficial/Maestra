@@ -435,10 +435,10 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-800">
-                Paso 1: Identificación del Agente
+                Paso 1: Identificarse
               </h2>
               <p className="text-xs text-slate-500">
-                Ingrese su DNI o número de legajo/empleado para consultar sus cargos vigentes. No requiere contraseña ni inicio de sesión con Google.
+                Ingrese su DNI o número de empleado.
               </p>
             </div>
           </div>
@@ -481,7 +481,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
                   ) : (
                     <>
                       <Search className="w-3.5 h-3.5 text-[#87b867]" />
-                      <span>Verificar</span>
+                      <span>Ver</span>
                     </>
                   )}
                 </button>
