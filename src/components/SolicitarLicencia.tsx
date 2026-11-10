@@ -431,7 +431,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
           Solicitar Licencia
         </h1>
         <p className="text-xs sm:text-sm text-slate-600">
-          Complete el formulario oficial con firma manuscrita para tramitar su licencia docente o no docente.
+          Complete los formularios según corresponda.
         </p>
       </div>
 
