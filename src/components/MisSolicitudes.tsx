@@ -166,6 +166,12 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
     if (activeEmployeeNumber) {
       loadRequests(activeEmployeeNumber);
     }
+    const unsub = dataService.subscribe(() => {
+      if (activeEmployeeNumber) {
+        loadRequests(activeEmployeeNumber);
+      }
+    });
+    return unsub;
   }, [activeEmployeeNumber]);
 
   const loadRequests = async (queryNum: string) => {
@@ -186,8 +192,8 @@ export const MisSolicitudes: React.FC<MisSolicitudesProps> = ({
       const list = await dataService.getRequestsByEmployee(agent.employeeNumber);
       setRequests(list);
 
-      // Consulta aislada de licencias de SISO exclusivamente por DNI o legajo
-      const sisoList = dataService.getSisoLicensesByAgent({
+      // Consulta directa de licencias de SISO en Supabase por DNI o legajo (11.000+ registros)
+      const sisoList = await dataService.querySisoLicensesByAgent({
         dni: agent.dni,
         nroEmpleado: agent.employeeNumber
       });

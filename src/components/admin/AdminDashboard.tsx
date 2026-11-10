@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   Briefcase, 
@@ -27,6 +27,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onNavigateTab,
   onOpenRequestModal,
 }) => {
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const unsub = dataService.subscribe(() => {
+      setTick((t) => t + 1);
+    });
+    return unsub;
+  }, []);
+
   const metrics = dataService.getDashboardMetrics();
   const pendingRequests = dataService.getRequests().filter((r) => r.status === 'Pendiente');
   const longLicenses = dataService.getLongLicenses();

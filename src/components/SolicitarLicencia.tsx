@@ -83,13 +83,19 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
 
   // Load license types
   useEffect(() => {
-    dataService.getLicenseTypes().then((types) => {
-      setLicenseTypes(types);
-      if (types.length > 0) {
-        setSelectedTypeId(types[0].id);
-        setSelectedType(types[0]);
-      }
-    });
+    const fetchTypes = () => {
+      dataService.getLicenseTypes().then((types) => {
+        if (types && types.length > 0) {
+          setLicenseTypes(types);
+          setSelectedTypeId((prev) => prev || types[0].id);
+          setSelectedType((prev) => prev || types[0]);
+        }
+      });
+    };
+
+    fetchTypes();
+    const unsub = dataService.subscribe(fetchTypes);
+    return unsub;
   }, []);
 
   // When selectedTypeId changes, update selectedType
@@ -108,7 +114,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
   const handleVerifyEmployee = async (empNum?: string) => {
     const num = empNum || employeeInput;
     if (!num.trim()) {
-      setVerificationError('Por favor ingrese su número de empleado.');
+      setVerificationError('Por favor ingrese su DNI o número de empleado.');
       return;
     }
 
@@ -118,7 +124,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
     try {
       const agent = await dataService.verifyAgent(num);
       if (!agent) {
-        setVerificationError('No se encontró ningún agente con el número de empleado ingresado. Verifique su número de legajo.');
+        setVerificationError('No se encontró ningún agente con el número ingresado. Verifique su DNI o número de legajo.');
         setCurrentAgent(null);
       } else {
         setCurrentAgent(agent);
@@ -133,7 +139,7 @@ export const SolicitarLicencia: React.FC<SolicitarLicenciaProps> = ({
         }
       }
     } catch (err) {
-      setVerificationError('Error al consultar el padrón de agentes. Intente nuevamente.');
+      setVerificationError('Error al consultar el padrón de agentes en Supabase. Intente nuevamente.');
     } finally {
       setIsVerifying(false);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   FileText, 
   Search, 
@@ -98,6 +98,16 @@ export const SolicitudesAdminModule: React.FC<SolicitudesAdminModuleProps> = ({
   const refreshRequests = () => {
     setRequests(dataService.getRequests());
   };
+
+  useEffect(() => {
+    dataService.refreshRequestsFromSupabase().then(() => {
+      refreshRequests();
+    });
+    const unsub = dataService.subscribe(() => {
+      refreshRequests();
+    });
+    return unsub;
+  }, []);
 
   // Section 17: "Limpiar filtros"
   const handleClearFilters = () => {

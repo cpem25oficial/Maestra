@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
   Search, 
@@ -53,6 +53,14 @@ export const AgentesModule: React.FC = () => {
   const refreshAgents = () => {
     setAgents(dataService.getAgents());
   };
+
+  useEffect(() => {
+    refreshAgents();
+    const unsub = dataService.subscribe(() => {
+      refreshAgents();
+    });
+    return unsub;
+  }, []);
 
   // Filtered agents (Section 4: Buscar por apellido, nombre, DNI o número de empleado)
   const filteredAgents = useMemo(() => {

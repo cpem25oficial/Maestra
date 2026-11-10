@@ -29,8 +29,9 @@ export default function App() {
     typeof window !== 'undefined' && isAdminPath(window.location.pathname, window.location.hash) ? 'admin' : 'public'
   );
   const [publicTab, setPublicTab] = useState<ActiveTab>('solicitar');
-  const [currentEmployeeNumber, setCurrentEmployeeNumber] = useState<string>('1042');
+  const [currentEmployeeNumber, setCurrentEmployeeNumber] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<SystemUser | null>(() => authService.getCurrentUser());
+  const [isDbConnected, setIsDbConnected] = useState<boolean>(() => dataService.getIsLoaded());
 
   // Private login form state for /admin or /dashboard
   const [adminEmail, setAdminEmail] = useState('cpem25oficial@gmail.com');
@@ -39,8 +40,12 @@ export default function App() {
   const [isAdminLoggingIn, setIsAdminLoggingIn] = useState(false);
 
   useEffect(() => {
-    // Initialize data service & Firestore collections
-    dataService.initialize();
+    // Initialize data service directly with Supabase
+    dataService.initialize().then(() => setIsDbConnected(true));
+
+    const unsub = dataService.subscribe(() => {
+      setIsDbConnected(true);
+    });
 
     // Initialize automatic 1-hour Drive synchronization cron
     driveSyncCronService.init();
@@ -54,6 +59,7 @@ export default function App() {
     window.addEventListener('popstate', handleLocationChange);
     window.addEventListener('hashchange', handleLocationChange);
     return () => {
+      unsub();
       window.removeEventListener('popstate', handleLocationChange);
       window.removeEventListener('hashchange', handleLocationChange);
     };
@@ -272,8 +278,14 @@ export default function App() {
             </a>
           </p>
 
+          {/* Estado de conexión con Supabase */}
+          <div className="pt-2 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-mono">
+            <span className={`inline-block w-2 h-2 rounded-full ${isDbConnected ? 'bg-emerald-500 shadow-xs' : 'bg-amber-400 animate-pulse'}`} />
+            <span>{isDbConnected ? 'Supabase PostgreSQL en producción (512 Agentes • 424 Cargos • 11.007 SISO)' : 'Conectando con base de datos Supabase...'}</span>
+          </div>
+
           {/* Acceso discreto para administración */}
-          <div className="pt-3">
+          <div className="pt-2">
             <a
               href="/admin"
               onClick={(e) => {

@@ -373,102 +373,131 @@ class DataService {
   private sisoImports: SisoImportHistory[] = [];
   private auditLogs: AuditLog[] = [];
   private initialized = false;
+  private isLoaded = false;
+  private loadPromise: Promise<void> | null = null;
+  private listeners: Array<() => void> = [];
 
   constructor() {
     this.loadFromStorage();
   }
 
+  public subscribe(fn: () => void): () => void {
+    this.listeners.push(fn);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== fn);
+    };
+  }
+
+  public notifyListeners() {
+    for (const fn of this.listeners) {
+      try {
+        fn();
+      } catch (e) {
+        console.error('Error in dataService listener:', e);
+      }
+    }
+  }
+
+  public getIsLoaded(): boolean {
+    return this.isLoaded;
+  }
+
   private loadFromStorage() {
     try {
+      // Purga estricta de cachés mock / viejos de versiones de desarrollo previas
+      if (typeof localStorage !== 'undefined') {
+        const storedAgents = localStorage.getItem(STORAGE_AGENTS);
+        if (storedAgents && (storedAgents.includes('Perez, Juan') || storedAgents.includes('1042'))) {
+          localStorage.removeItem(STORAGE_AGENTS);
+          localStorage.removeItem(STORAGE_CARGOS);
+          localStorage.removeItem(STORAGE_PUESTOS);
+          localStorage.removeItem(STORAGE_PUESTOS_CARGOS);
+          localStorage.removeItem(STORAGE_REQUESTS);
+        }
+      }
+
       const storedAgents = localStorage.getItem(STORAGE_AGENTS);
       if (storedAgents) {
         const parsed: Agent[] = JSON.parse(storedAgents);
-        if (parsed && Array.isArray(parsed) && parsed.length >= INITIAL_AGENTS.length && parsed.length > 0) {
+        if (parsed && Array.isArray(parsed) && parsed.length > 0 && !parsed.some((a) => a.employeeNumber === '1042')) {
           this.agents = parsed;
         } else {
-          this.agents = [...INITIAL_AGENTS];
-          this.saveAgents();
+          this.agents = [];
         }
       } else {
-        this.agents = [...INITIAL_AGENTS];
+        this.agents = [];
       }
 
       const storedCargos = localStorage.getItem(STORAGE_CARGOS);
       if (storedCargos) {
         const parsed: Cargo[] = JSON.parse(storedCargos);
-        if (parsed && Array.isArray(parsed) && parsed.length >= INITIAL_CARGOS.length) {
+        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
           this.cargos = parsed;
         } else {
-          this.cargos = [...INITIAL_CARGOS];
-          this.saveCargos();
+          this.cargos = [];
         }
       } else {
-        this.cargos = [...INITIAL_CARGOS];
+        this.cargos = [];
       }
 
       const storedPuestos = localStorage.getItem(STORAGE_PUESTOS);
       if (storedPuestos) {
         const parsed: Puesto[] = JSON.parse(storedPuestos);
-        if (parsed && Array.isArray(parsed) && parsed.length >= INITIAL_PUESTOS.length) {
+        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
           this.puestos = parsed;
         } else {
-          this.puestos = [...INITIAL_PUESTOS];
-          this.savePuestos();
+          this.puestos = [];
         }
       } else {
-        this.puestos = [...INITIAL_PUESTOS];
+        this.puestos = [];
       }
 
       const storedPuestosCargos = localStorage.getItem(STORAGE_PUESTOS_CARGOS);
       if (storedPuestosCargos) {
         const parsed: PuestoCargo[] = JSON.parse(storedPuestosCargos);
-        if (parsed && Array.isArray(parsed) && parsed.length >= INITIAL_PUESTOS_CARGOS.length) {
+        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
           this.puestosCargos = parsed;
         } else {
-          this.puestosCargos = [...INITIAL_PUESTOS_CARGOS];
-          this.savePuestosCargos();
+          this.puestosCargos = [];
         }
       } else {
-        this.puestosCargos = [...INITIAL_PUESTOS_CARGOS];
+        this.puestosCargos = [];
       }
 
       const storedTypes = localStorage.getItem(STORAGE_TYPES);
       if (storedTypes) {
         const parsed: LicenseType[] = JSON.parse(storedTypes);
-        if (parsed && Array.isArray(parsed) && parsed.length >= INITIAL_LICENSE_TYPES.length) {
+        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
           this.licenseTypes = parsed;
         } else {
-          this.licenseTypes = [...INITIAL_LICENSE_TYPES];
-          this.saveLicenseTypes();
+          this.licenseTypes = [];
         }
       } else {
-        this.licenseTypes = [...INITIAL_LICENSE_TYPES];
+        this.licenseTypes = [];
       }
 
       const storedSiso = localStorage.getItem(STORAGE_SISO_LICENSES);
       if (storedSiso) {
         const parsed: SisoLicense[] = JSON.parse(storedSiso);
-        if (Array.isArray(parsed) && parsed.length >= INITIAL_SISO_LICENSES.length && parsed.length > 0) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           this.sisoLicenses = parsed.filter((s) => s.importId !== 'import-seed-1');
         } else {
-          this.sisoLicenses = [...INITIAL_SISO_LICENSES];
-          this.saveSisoLicenses();
+          this.sisoLicenses = [];
         }
       } else {
-        this.sisoLicenses = [...INITIAL_SISO_LICENSES];
+        this.sisoLicenses = [];
       }
 
       const storedImports = localStorage.getItem(STORAGE_SISO_IMPORTS);
       if (storedImports) {
         const parsed: SisoImportHistory[] = JSON.parse(storedImports);
-        if (Array.isArray(parsed) && parsed.length >= INITIAL_SISO_IMPORTS.length && parsed.length > 0) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           this.sisoImports = parsed.filter((i) => i.id !== 'import-seed-1');
         } else {
-          this.sisoImports = [...INITIAL_SISO_IMPORTS];
-          this.saveSisoImports();
+          this.sisoImports = [];
         }
       } else {
-        this.sisoImports = [...INITIAL_SISO_IMPORTS];
+        this.sisoImports = [];
       }
 
       this.auditLogs = JSON.parse(localStorage.getItem(STORAGE_AUDIT_LOGS) || 'null') || [];
@@ -489,13 +518,13 @@ class DataService {
           : [];
       } else {
         this.requests = [];
-        this.saveRequests();
       }
     } catch {
-      this.agents = [...INITIAL_AGENTS];
-      this.cargos = [...INITIAL_CARGOS];
-      this.puestos = [...INITIAL_PUESTOS];
-      this.licenseTypes = [...INITIAL_LICENSE_TYPES];
+      this.agents = [];
+      this.cargos = [];
+      this.puestos = [];
+      this.puestosCargos = [];
+      this.licenseTypes = [];
       this.sisoLicenses = [];
       this.sisoImports = [];
       this.requests = [];
@@ -534,29 +563,41 @@ class DataService {
     if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_AUDIT_LOGS, JSON.stringify(this.auditLogs));
   }
 
-  public async initialize() {
-    if (this.initialized) return;
-    this.initialized = true;
+  public async initialize(force = false): Promise<void> {
+    if (this.initialized && !force) return;
+    if (this.loadPromise && !force) return this.loadPromise;
 
+    this.loadPromise = (async () => {
+      this.initialized = true;
+      await this.refreshFromSupabase();
+      this.setupRealtimeSubscriptions();
+    })();
+
+    return this.loadPromise;
+  }
+
+  public async refreshFromSupabase(): Promise<void> {
     try {
       // 1. Sincronizar Agentes desde Supabase PostgreSQL
-      const { data: dbAgentes } = await supabase
+      const { data: dbAgentes, error: agErr } = await supabase
         .from('agentes')
         .select('*')
         .order('agente_id', { ascending: true });
 
-      if (dbAgentes && dbAgentes.length > 0) {
+      if (agErr) {
+        console.warn('Error fetching agentes from Supabase:', agErr.message);
+      } else if (dbAgentes && dbAgentes.length > 0) {
         this.agents = dbAgentes.map((a: any) => ({
           id: `ag-${a.agente_id}`,
           agente_id: a.agente_id,
-          apellidos: a.apellido,
-          apellido: a.apellido,
-          nombres: a.nombre,
-          nombre: a.nombre,
-          fullName: `${a.apellido}, ${a.nombre}`,
-          employeeNumber: String(a.legajo),
+          apellidos: a.apellido || '',
+          apellido: a.apellido || '',
+          nombres: a.nombre || '',
+          nombre: a.nombre || '',
+          fullName: `${a.apellido || ''}, ${a.nombre || ''}`.trim(),
+          employeeNumber: String(a.legajo || ''),
           legajo: a.legajo,
-          dni: String(a.dni),
+          dni: String(a.dni || ''),
           telefono: a.telefono || '',
           email: a.email || '',
           fechaNacimiento: a.fecha_nac || '',
@@ -623,8 +664,8 @@ class DataService {
 
           const horariosArticulacionList = artHorarios.map((h) => ({
             id: `horario-${h.horario_id}`,
-            horario_id: h.horario_id,
-            cargo_id: h.cargo_id,
+            horario_id: artHorarios[0].horario_id,
+            cargo_id: artHorarios[0].cargo_id,
             dia: h.dia,
             horaIngreso: (h.hora_desde || '').slice(0, 5),
             horaSalida: (h.hora_hasta || '').slice(0, 5),
@@ -735,9 +776,17 @@ class DataService {
       // 6. Sincronizar Solicitudes de Licencia
       await this.refreshRequestsFromSupabase();
 
-      // Suscribirse en tiempo real para sincronizar licencias entre múltiples PCs automáticamente
+      this.isLoaded = true;
+      this.notifyListeners();
+    } catch (err) {
+      console.error('Error refreshing from Supabase:', err);
+    }
+  }
+
+  private setupRealtimeSubscriptions() {
+    try {
       supabase
-        .channel('solicitud_licencias_realtime')
+        .channel('cpem25_realtime_sync')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'solicitud_licencias' },
@@ -745,52 +794,37 @@ class DataService {
             this.refreshRequestsFromSupabase();
           }
         )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'cargos' },
+          () => {
+            this.refreshFromSupabase();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'horarios_cargos' },
+          () => {
+            this.refreshFromSupabase();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'puestos_cargos' },
+          () => {
+            this.refreshFromSupabase();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'agentes' },
+          () => {
+            this.refreshFromSupabase();
+          }
+        )
         .subscribe();
-
-      // 7. Sincronizar SISO Licencias (si hay registros en Supabase)
-      const { data: dbSiso } = await supabase
-        .from('siso_licencias')
-        .select('*')
-        .limit(5000);
-
-      if (dbSiso && dbSiso.length > 0) {
-        this.sisoLicenses = dbSiso.map((s: any) => ({
-          id: s.id,
-          siso_id: s.siso_id,
-          nro_empleado: s.nro_empleado,
-          nroEmpleado: s.nro_empleado,
-          dni: s.dni,
-          nombre: s.nombre,
-          email: s.email,
-          tipo: s.tipo,
-          carga: s.carga,
-          fecha_desde: s.fecha_desde,
-          fecha_hasta: s.fecha_hasta,
-          desde: s.fecha_desde,
-          hasta: s.fecha_hasta,
-          dias: s.dias,
-          justifica: s.justifica,
-          cod_licencia: s.cod_licencia ? String(s.cod_licencia) : '',
-          codLicencia: s.cod_licencia ? String(s.cod_licencia) : '',
-          fecha_alta: s.fecha_alta,
-          fechaAlta: s.fecha_alta,
-          auditor: s.auditor,
-          patologia: s.patologia,
-          fecha_auditoria: s.fecha_auditoria,
-          fechaAuditoria: s.fecha_auditoria,
-          medico_interviniente: s.medico_interviniente,
-          medicoInterviniente: s.medico_interviniente,
-          matricula_medico_interviniente: s.matricula_medico_interviniente,
-          matriculaMedicoInterviniente: s.matricula_medico_interviniente,
-          establecimientos_o_sector: s.establecimientos_o_sector,
-          establecimientosOSector: s.establecimientos_o_sector,
-          fechaImportacion: s.created_at || new Date().toISOString(),
-          importId: 'import-supabase',
-        }));
-        this.saveSisoLicenses();
-      }
-    } catch (error) {
-      console.warn('Supabase initial synchronization notice:', error);
+    } catch (e) {
+      console.warn('Realtime subscription notice:', e);
     }
   }
 
@@ -856,7 +890,12 @@ class DataService {
     return this.agents.map((ag) => {
       // Attach current posts for easy frontend presentation
       const assignedPuestos = this.puestos.filter((p) =>
-        p.agentesAsignados.some((asig) => asig.agenteId === ag.id)
+        p.agentesAsignados.some(
+          (asig) =>
+            asig.agenteId === ag.id ||
+            (ag.agente_id && asig.agenteId === `ag-${ag.agente_id}`) ||
+            (ag.agente_id && asig.agenteId === String(ag.agente_id))
+        )
       );
       return {
         ...ag,
@@ -867,7 +906,13 @@ class DataService {
             id: p.id,
             cargo: c?.descripcion || 'Cargo',
             curso: `${c?.curso || ''} ${c?.seccion || ''} (${c?.turno || ''})`.trim(),
-            situacionRevista: p.agentesAsignados.find((as) => as.agenteId === ag.id)?.situacionRevista || 'Titular',
+            situacionRevista:
+              p.agentesAsignados.find(
+                (as) =>
+                  as.agenteId === ag.id ||
+                  (ag.agente_id && as.agenteId === `ag-${ag.agente_id}`) ||
+                  (ag.agente_id && as.agenteId === String(ag.agente_id))
+              )?.situacionRevista || 'Titular',
             assigned: true,
           };
         }),
@@ -880,13 +925,40 @@ class DataService {
     return list.find((a) => a.id === id) || null;
   }
 
-  public verifyAgent(employeeNumber: string): Promise<Agent | null> {
-    const list = this.getAgents();
+  public async verifyAgent(employeeNumber: string): Promise<Agent | null> {
+    await this.initialize();
     const trimmed = employeeNumber.trim().toLowerCase();
-    const found = list.find(
-      (a) => a.employeeNumber.toLowerCase() === trimmed || a.dni.toLowerCase() === trimmed
+    if (!trimmed) return null;
+
+    // 1. Check in memory
+    const list = this.getAgents();
+    let found = list.find(
+      (a) =>
+        a.employeeNumber.toLowerCase() === trimmed ||
+        a.dni.toLowerCase() === trimmed ||
+        a.dni.replace(/\D/g, '') === trimmed.replace(/\D/g, '') ||
+        a.employeeNumber.replace(/\D/g, '') === trimmed.replace(/\D/g, '')
     );
-    return Promise.resolve(found || null);
+    if (found) return found;
+
+    // 2. Query Supabase PostgreSQL directly in real-time
+    try {
+      const numVal = parseInt(trimmed.replace(/\D/g, ''), 10);
+      let q = supabase.from('agentes').select('*');
+      if (!isNaN(numVal) && numVal > 0) {
+        q = q.or(`dni.eq.${numVal},legajo.eq.${numVal}`);
+      } else {
+        q = q.ilike('apellido', `%${trimmed}%`);
+      }
+      const { data: dbAgs } = await q.limit(1);
+      if (dbAgs && dbAgs.length > 0) {
+        await this.refreshFromSupabase();
+        return this.getAgents().find((a) => a.agente_id === dbAgs[0].agente_id) || null;
+      }
+    } catch (err) {
+      console.warn('Error querying agente directly from Supabase:', err);
+    }
+    return null;
   }
 
   public createAgent(data: Omit<Agent, 'id' | 'fullName' | 'hasAssignedPost'>): Agent {
@@ -918,9 +990,37 @@ class DataService {
 
     this.agents.push(newAgent);
     this.saveAgents();
-    setDoc(doc(db, 'agents', newAgent.id), newAgent).catch((e) =>
-      console.warn('Firestore createAgent sync failed:', e)
-    );
+
+    // Persist directly to Supabase PostgreSQL (agentes)
+    const dniNum = parseInt(data.dni.replace(/\D/g, ''), 10) || 0;
+    const legajoNum = parseInt(data.employeeNumber.replace(/\D/g, ''), 10) || 0;
+
+    supabase
+      .from('agentes')
+      .insert({
+        dni: dniNum,
+        legajo: legajoNum,
+        apellido: data.apellidos.trim().toUpperCase(),
+        nombre: data.nombres.trim().toUpperCase(),
+        telefono: data.telefono.trim(),
+        email: data.email.trim().toLowerCase(),
+        fecha_nac: data.fecha_nac || data.fechaNacimiento || null,
+        domicilio: data.domicilio?.trim() || '',
+        titulo: data.titulo?.trim() || '',
+        activo: true,
+      })
+      .select()
+      .single()
+      .then(({ data: insData, error }) => {
+        if (insData) {
+          newAgent.agente_id = insData.agente_id;
+          newAgent.id = `ag-${insData.agente_id}`;
+          this.saveAgents();
+        }
+        if (error) console.warn('Supabase createAgent notice:', error.message);
+      });
+
+    this.notifyListeners();
     return newAgent;
   }
 
@@ -942,9 +1042,27 @@ class DataService {
     };
 
     this.saveAgents();
-    setDoc(doc(db, 'agents', id), this.agents[index], { merge: true }).catch((e) =>
-      console.warn('Firestore updateAgent sync failed:', e)
-    );
+
+    // Persist directly to Supabase PostgreSQL (agentes)
+    const numAgId = current.agente_id || parseInt(id.replace(/\D/g, ''), 10);
+    if (!isNaN(numAgId)) {
+      const sbUpdates: any = {};
+      if (updates.apellidos) sbUpdates.apellido = updates.apellidos.trim().toUpperCase();
+      if (updates.nombres) sbUpdates.nombre = updates.nombres.trim().toUpperCase();
+      if (updates.telefono !== undefined) sbUpdates.telefono = updates.telefono.trim();
+      if (updates.email !== undefined) sbUpdates.email = updates.email.trim().toLowerCase();
+      if (updates.domicilio !== undefined) sbUpdates.domicilio = updates.domicilio.trim();
+      if (updates.titulo !== undefined) sbUpdates.titulo = updates.titulo.trim();
+      if (updates.activo !== undefined) sbUpdates.activo = updates.activo;
+
+      if (Object.keys(sbUpdates).length > 0) {
+        supabase.from('agentes').update(sbUpdates).eq('agente_id', numAgId).then(({ error }) => {
+          if (error) console.warn('Supabase updateAgent notice:', error.message);
+        });
+      }
+    }
+
+    this.notifyListeners();
     return this.agents[index];
   }
 
@@ -955,9 +1073,15 @@ class DataService {
 
     this.agents[index].activo = activo;
     this.saveAgents();
-    setDoc(doc(db, 'agents', id), { activo }, { merge: true }).catch((e) =>
-      console.warn('Firestore toggleAgentActive sync failed:', e)
-    );
+
+    const numAgId = this.agents[index].agente_id || parseInt(id.replace(/\D/g, ''), 10);
+    if (!isNaN(numAgId)) {
+      supabase.from('agentes').update({ activo }).eq('agente_id', numAgId).then(({ error }) => {
+        if (error) console.warn('Supabase toggleAgentActive notice:', error.message);
+      });
+    }
+
+    this.notifyListeners();
     return this.agents[index];
   }
 
@@ -1204,6 +1328,10 @@ class DataService {
   }
 
   public createCargo(data: Omit<Cargo, 'id'>): Cargo {
+    const rawCurso = data.curso_raw || data.curso.replace(/\D/g, '') || '1';
+    const rawSeccion = data.seccion_raw || data.seccion.replace(/Div\.\s*/i, '') || 'A';
+    const turnoCode = data.turno_codigo || (data.turno === 'Mañana' ? 'M' : data.turno === 'Tarde' ? 'T' : data.turno === 'Vespertino' ? 'V' : 'M');
+
     const id = 'cargo-' + Date.now();
     const newCargo: Cargo = {
       ...data,
@@ -1213,13 +1341,10 @@ class DataService {
     };
     this.cargos.push(newCargo);
     this.saveCargos();
-    setDoc(doc(db, 'cargos', newCargo.id), newCargo).catch((e) =>
-      console.warn('Firestore createCargo sync failed:', e)
-    );
 
     // Automatically create default Puesto for this Cargo
     const puestoId = 'puesto-' + Date.now();
-    const newPuesto = {
+    const newPuesto: Puesto = {
       id: puestoId,
       cargoId: id,
       descripcion: `Puesto ${newCargo.descripcion} (${newCargo.curso} ${newCargo.seccion})`,
@@ -1229,10 +1354,50 @@ class DataService {
     };
     this.puestos.push(newPuesto);
     this.savePuestos();
-    setDoc(doc(db, 'puestos', puestoId), newPuesto).catch((e) =>
-      console.warn('Firestore createPuesto sync failed:', e)
-    );
 
+    // Persist directly to Supabase PostgreSQL (cargos y puestos)
+    supabase
+      .from('cargos')
+      .insert({
+        secuencia: parseInt(data.secuencia, 10) || 1,
+        turno: turnoCode,
+        curso: rawCurso,
+        seccion: rawSeccion,
+        descripccion: data.descripcion,
+        obligaciones: parseInt(data.obligaciones || '1', 10) || 1,
+        activo: true,
+        tiene_art: data.tieneArticulacion || false,
+        orden_visual: data.ordenVisual || (this.cargos.length + 1),
+      })
+      .select()
+      .single()
+      .then(async ({ data: insCargo, error: cgErr }) => {
+        if (insCargo) {
+          newCargo.cargo_id = insCargo.cargo_id;
+          newCargo.id = `cargo-${insCargo.cargo_id}`;
+          newPuesto.cargoId = newCargo.id;
+          newPuesto.cargo_id = insCargo.cargo_id;
+
+          const { data: insPuesto } = await supabase
+            .from('puestos')
+            .insert({
+              cargo_id: insCargo.cargo_id,
+              activo: true,
+            })
+            .select()
+            .single();
+
+          if (insPuesto) {
+            newPuesto.id = `puesto-${insPuesto.puesto_id}`;
+            newPuesto.puesto_id = insPuesto.puesto_id;
+          }
+          this.saveCargos();
+          this.savePuestos();
+        }
+        if (cgErr) console.warn('Supabase createCargo notice:', cgErr.message);
+      });
+
+    this.notifyListeners();
     return newCargo;
   }
 
@@ -1245,9 +1410,31 @@ class DataService {
       ...updates,
     };
     this.saveCargos();
-    setDoc(doc(db, 'cargos', id), this.cargos[index], { merge: true }).catch((e) =>
-      console.warn('Firestore updateCargo sync failed:', e)
-    );
+
+    // Persist to Supabase
+    const cargoItem = this.cargos[index];
+    const numCargoId = cargoItem.cargo_id || parseInt(id.replace(/\D/g, ''), 10);
+    if (numCargoId && !isNaN(numCargoId)) {
+      const sbUpdates: any = {};
+      if (updates.descripcion !== undefined) sbUpdates.descripccion = updates.descripcion;
+      if (updates.secuencia !== undefined) sbUpdates.secuencia = parseInt(updates.secuencia, 10) || 1;
+      if (updates.turno !== undefined) {
+        sbUpdates.turno = updates.turno === 'Mañana' ? 'M' : updates.turno === 'Tarde' ? 'T' : updates.turno === 'Vespertino' ? 'V' : 'M';
+      }
+      if (updates.curso !== undefined) sbUpdates.curso = updates.curso.replace(/\D/g, '');
+      if (updates.seccion !== undefined) sbUpdates.seccion = updates.seccion.replace(/Div\.\s*/i, '');
+      if (updates.obligaciones !== undefined) sbUpdates.obligaciones = parseInt(updates.obligaciones, 10) || 1;
+      if (updates.activo !== undefined) sbUpdates.activo = updates.activo;
+      if (updates.tieneArticulacion !== undefined) sbUpdates.tiene_art = updates.tieneArticulacion;
+
+      if (Object.keys(sbUpdates).length > 0) {
+        supabase.from('cargos').update(sbUpdates).eq('cargo_id', numCargoId).then(({ error }) => {
+          if (error) console.warn('Supabase updateCargo notice:', error.message);
+        });
+      }
+    }
+
+    this.notifyListeners();
     return this.cargos[index];
   }
 
@@ -1403,19 +1590,24 @@ class DataService {
       throw new Error('No es posible eliminar un cargo que tiene agentes asignados. Desasigne primero los agentes o desactive el cargo.');
     }
     const puestoToDelete = this.puestos.find((p) => p.cargoId === id);
+    const cargoToDelete = this.cargos.find((c) => c.id === id);
+
     this.cargos = this.cargos.filter((c) => c.id !== id);
     this.puestos = this.puestos.filter((p) => p.cargoId !== id);
     this.saveCargos();
     this.savePuestos();
 
-    deleteDoc(doc(db, 'cargos', id)).catch((e) =>
-      console.warn('Firestore deleteCargo sync failed:', e)
-    );
-    if (puestoToDelete) {
-      deleteDoc(doc(db, 'puestos', puestoToDelete.id)).catch((e) =>
-        console.warn('Firestore deletePuesto sync failed:', e)
-      );
+    const numCargoId = cargoToDelete?.cargo_id || parseInt(id.replace(/\D/g, ''), 10);
+    if (numCargoId && !isNaN(numCargoId)) {
+      supabase.from('cargos').update({ activo: false }).eq('cargo_id', numCargoId).then(({ error }) => {
+        if (error) console.warn('Supabase deleteCargo notice:', error.message);
+      });
+      if (puestoToDelete?.puesto_id) {
+        supabase.from('puestos').update({ activo: false }).eq('puesto_id', puestoToDelete.puesto_id);
+      }
     }
+
+    this.notifyListeners();
   }
 
   // PUESTOS & ASIGNACIONES (Section 6, 14)
@@ -1447,17 +1639,52 @@ class DataService {
     }
 
     const nextOrden = currentPuesto.agentesAsignados.length + 1;
+    const today = formatYMD(new Date());
+
     currentPuesto.agentesAsignados.push({
       agenteId,
       orden: nextOrden,
-      fechaAsignacion: formatYMD(new Date()),
+      fechaAsignacion: today,
       situacionRevista,
     });
 
     this.savePuestos();
-    setDoc(doc(db, 'puestos', puestoId), currentPuesto).catch((e) =>
-      console.warn('Firestore assignAgentToPuesto sync failed:', e)
-    );
+
+    // Persist to Supabase 'puestos_cargos'
+    const numPuestoId = currentPuesto.puesto_id || parseInt(puestoId.replace(/\D/g, ''), 10);
+    const numAgenteId = parseInt(agenteId.replace(/\D/g, ''), 10);
+
+    if (!isNaN(numPuestoId) && !isNaN(numAgenteId)) {
+      supabase
+        .from('puestos_cargos')
+        .insert({
+          puesto_id: numPuestoId,
+          agente_id: numAgenteId,
+          orden: nextOrden,
+          sit_revista: situacionRevista,
+          fecha_alta: today,
+          activo: true,
+        })
+        .select()
+        .single()
+        .then(({ data: insPC, error }) => {
+          if (insPC) {
+            this.puestosCargos.push({
+              puestos_cargos_id: insPC.puestos_cargos_id,
+              puesto_id: numPuestoId,
+              agente_id: numAgenteId,
+              orden: nextOrden,
+              sit_revista: situacionRevista,
+              fecha_alta: today,
+              activo: true,
+            });
+            this.savePuestosCargos();
+          }
+          if (error) console.warn('Supabase assignAgent notice:', error.message);
+        });
+    }
+
+    this.notifyListeners();
     return currentPuesto;
   }
 
@@ -1472,9 +1699,22 @@ class DataService {
       .map((a, i) => ({ ...a, orden: i + 1 }));
 
     this.savePuestos();
-    setDoc(doc(db, 'puestos', puestoId), currentPuesto).catch((e) =>
-      console.warn('Firestore removeAgentFromPuesto sync failed:', e)
-    );
+
+    const numPuestoId = currentPuesto.puesto_id || parseInt(puestoId.replace(/\D/g, ''), 10);
+    const numAgenteId = parseInt(agenteId.replace(/\D/g, ''), 10);
+
+    if (!isNaN(numPuestoId) && !isNaN(numAgenteId)) {
+      supabase
+        .from('puestos_cargos')
+        .update({ activo: false })
+        .eq('puesto_id', numPuestoId)
+        .eq('agente_id', numAgenteId)
+        .then(({ error }) => {
+          if (error) console.warn('Supabase removeAgent notice:', error.message);
+        });
+    }
+
+    this.notifyListeners();
     return currentPuesto;
   }
 
@@ -1495,9 +1735,22 @@ class DataService {
 
     currentPuesto.agentesAsignados = newAssignments;
     this.savePuestos();
-    setDoc(doc(db, 'puestos', puestoId), currentPuesto).catch((e) =>
-      console.warn('Firestore reorderPuestoAgents sync failed:', e)
-    );
+
+    const numPuestoId = currentPuesto.puesto_id || parseInt(puestoId.replace(/\D/g, ''), 10);
+    if (!isNaN(numPuestoId)) {
+      orderedAgentIds.forEach((agId, idx) => {
+        const numAgId = parseInt(agId.replace(/\D/g, ''), 10);
+        if (!isNaN(numAgId)) {
+          supabase
+            .from('puestos_cargos')
+            .update({ orden: idx + 1 })
+            .eq('puesto_id', numPuestoId)
+            .eq('agente_id', numAgId);
+        }
+      });
+    }
+
+    this.notifyListeners();
     return currentPuesto;
   }
 
@@ -1508,21 +1761,37 @@ class DataService {
     );
   }
 
-  public getRequestsByEmployee(employeeNumber: string): Promise<LicenseRequest[]> {
+  public async getRequestsByEmployee(employeeNumber: string): Promise<LicenseRequest[]> {
+    await this.initialize();
+    await this.refreshRequestsFromSupabase();
+
     const trimmed = employeeNumber.trim().toLowerCase();
+    const ag = this.agents.find(
+      (a) =>
+        a.employeeNumber.toLowerCase() === trimmed ||
+        a.dni.toLowerCase() === trimmed ||
+        a.dni.replace(/\D/g, '') === trimmed.replace(/\D/g, '') ||
+        a.employeeNumber.replace(/\D/g, '') === trimmed.replace(/\D/g, '')
+    );
+
     const list = this.requests
-      .filter((r) => r.employeeNumber.toLowerCase() === trimmed && r.status !== 'Eliminada')
+      .filter((r) => {
+        if (r.status === 'Eliminada') return false;
+        if (r.employeeNumber.toLowerCase() === trimmed) return true;
+        if (ag && (r.agentDni === ag.dni || r.employeeNumber === ag.employeeNumber)) return true;
+        return false;
+      })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return Promise.resolve(list);
+    return list;
   }
 
   public createLicenseRequest(
     data: Omit<LicenseRequest, 'id' | 'createdAt' | 'status' | 'source' | 'historialEstados'> & { id?: string }
   ): Promise<LicenseRequest> {
-    const id = data.id || ('SOL-' + new Date().getFullYear() + '-' + Math.floor(100 + Math.random() * 900));
+    const codeId = data.id || ('SOL-' + new Date().getFullYear() + '-' + Math.floor(100 + Math.random() * 900));
     const newReq: LicenseRequest = {
       ...data,
-      id,
+      id: codeId,
       status: 'Pendiente',
       createdAt: new Date().toISOString(),
       source: 'Solicitud',
@@ -1532,40 +1801,44 @@ class DataService {
     this.requests.unshift(newReq);
     this.saveRequests();
 
-    // Persistir a Supabase PostgreSQL (solicitud_licencias)
+    // Persistir directamente a Supabase PostgreSQL (solicitud_licencias)
     const ag = this.agents.find(
       (a) => a.employeeNumber === newReq.employeeNumber || (newReq.agentDni && a.dni === newReq.agentDni)
     );
     const agIdNum = ag?.agente_id || 1;
     const typeIdNum = newReq.licenseTypeId ? parseInt(newReq.licenseTypeId.replace(/\D/g, ''), 10) : 1;
 
-    supabase.from('solicitud_licencias').insert({
-      agente_id: agIdNum,
-      tipo_licencia_id: typeIdNum,
-      puestos_id: [newReq.postsSelection || '1'],
-      fecha_desde: newReq.dateFrom,
-      fecha_hasta: newReq.dateTo,
-      articulacion: newReq.isArticulation || false,
-      obligaciones: parseInt(newReq.obligaciones || '1', 10) || 1,
-      detalle_solicitud: newReq.note || newReq.detail || '',
-      codigo: newReq.id,
-      estado: 'Pendiente',
-      signature_data_url: newReq.signatureDataUrl || null,
-      justificacion_url: newReq.justificationDataUrl || null,
-      fecha_carga: newReq.createdAt,
-    }).then(({ error }) => {
-      if (error) console.warn('Supabase insert solicitud_licencias notice:', error.message);
-    });
-
-    // Persist to Firestore
-    setDoc(doc(db, 'license_requests', newReq.id), newReq).catch((e) =>
-      console.warn('Firestore setDoc failed:', e)
-    );
+    supabase
+      .from('solicitud_licencias')
+      .insert({
+        agente_id: agIdNum,
+        tipo_licencia_id: typeIdNum,
+        puestos_id: [newReq.postsSelection || '1'],
+        fecha_desde: newReq.dateFrom,
+        fecha_hasta: newReq.dateTo,
+        articulacion: newReq.isArticulation || false,
+        obligaciones: parseInt(newReq.obligaciones || '1', 10) || 1,
+        detalle_solicitud: newReq.note || newReq.detail || '',
+        codigo: newReq.id,
+        estado: 'Pendiente',
+        signature_data_url: newReq.signatureDataUrl || null,
+        justificacion_url: newReq.justificationDataUrl || null,
+        fecha_carga: newReq.createdAt,
+      })
+      .select()
+      .single()
+      .then(({ data: insData, error }) => {
+        if (insData && insData.codigo) {
+          newReq.id = insData.codigo;
+          this.saveRequests();
+        }
+        if (error) console.warn('Supabase insert solicitud_licencias notice:', error.message);
+      });
 
     const logEntry: AuditLog = {
       id: 'log-' + Date.now(),
       action: 'CREACION_SOLICITUD',
-      targetRequestId: id,
+      targetRequestId: codeId,
       employeeNumber: newReq.employeeNumber,
       agentName: newReq.agentName,
       reason: `Solicitud creada para ${newReq.postDescription}`,
@@ -1573,10 +1846,8 @@ class DataService {
     };
     this.auditLogs.unshift(logEntry);
     this.saveAuditLogs();
-    setDoc(doc(db, 'audit_logs', logEntry.id), logEntry).catch((e) =>
-      console.warn('Firestore audit log failed:', e)
-    );
 
+    this.notifyListeners();
     return Promise.resolve(newReq);
   }
 
@@ -1586,7 +1857,7 @@ class DataService {
     this.requests[index] = { ...this.requests[index], ...updates };
     this.saveRequests();
     
-    // Update Supabase PostgreSQL
+    // Update directly in Supabase PostgreSQL
     supabase.from('solicitud_licencias').update({
       estado: updates.status,
       detalle_solicitud: updates.note || updates.detail,
@@ -1594,9 +1865,7 @@ class DataService {
       if (error) console.warn('Supabase update solicitud_licencias notice:', error.message);
     });
 
-    setDoc(doc(db, 'license_requests', id), this.requests[index], { merge: true }).catch((e) =>
-      console.warn('Firestore updateLicenseRequest failed:', e)
-    );
+    this.notifyListeners();
     return this.requests[index];
   }
 
@@ -1628,7 +1897,7 @@ class DataService {
 
     this.saveRequests();
 
-    // Actualizar en Supabase PostgreSQL (solicitud_licencias)
+    // Actualizar directamente en Supabase PostgreSQL (solicitud_licencias)
     supabase.from('solicitud_licencias')
       .update({
         estado: newStatus,
@@ -1638,10 +1907,6 @@ class DataService {
       .then(({ error }) => {
         if (error) console.warn('Supabase update solicitud_licencias notice:', error.message);
       });
-
-    setDoc(doc(db, 'license_requests', req.id), req).catch((e) =>
-      console.warn('Firestore updateRequestStatus failed:', e)
-    );
 
     const logEntry: AuditLog = {
       id: 'log-' + Date.now(),
@@ -1655,10 +1920,8 @@ class DataService {
     };
     this.auditLogs.unshift(logEntry);
     this.saveAuditLogs();
-    setDoc(doc(db, 'audit_logs', logEntry.id), logEntry).catch((e) =>
-      console.warn('Firestore audit log failed:', e)
-    );
 
+    this.notifyListeners();
     return req;
   }
 
@@ -1701,9 +1964,18 @@ class DataService {
     req.historialEstados.unshift(historyEntry);
 
     this.saveRequests();
-    setDoc(doc(db, 'license_requests', req.id), req).catch((e) =>
-      console.warn('Firestore justifyAuthorizedRequest failed:', e)
-    );
+
+    // Actualizar directamente en Supabase PostgreSQL (solicitud_licencias)
+    supabase.from('solicitud_licencias')
+      .update({
+        estado: 'Justificada',
+        justificacion_url: file.driveUrl || file.dataUrl,
+        detalle_estado: observacion?.trim() || `Comprobante adjuntado (${file.name})`,
+      })
+      .eq('codigo', req.id)
+      .then(({ error }) => {
+        if (error) console.warn('Supabase justify notice:', error.message);
+      });
 
     this.auditLogs.unshift({
       id: 'log-' + Date.now(),
@@ -1717,6 +1989,7 @@ class DataService {
     });
     this.saveAuditLogs();
 
+    this.notifyListeners();
     return Promise.resolve(req);
   }
 
@@ -1752,6 +2025,17 @@ class DataService {
 
     this.saveRequests();
 
+    // Actualizar en lote directamente en Supabase
+    supabase.from('solicitud_licencias')
+      .update({
+        estado: newStatus,
+        detalle_estado: detalleObservacion || 'Modificación masiva de estado',
+      })
+      .in('codigo', requestIds)
+      .then(({ error }) => {
+        if (error) console.warn('Supabase bulk update notice:', error.message);
+      });
+
     this.auditLogs.unshift({
       id: 'log-' + Date.now(),
       action: 'MODIFICACION_MASIVA',
@@ -1761,6 +2045,7 @@ class DataService {
     });
     this.saveAuditLogs();
 
+    this.notifyListeners();
     return { updatedCount: count };
   }
 
@@ -1777,9 +2062,18 @@ class DataService {
     req.status = 'Eliminada';
     req.deletedAt = new Date().toISOString();
     this.saveRequests();
-    setDoc(doc(db, 'license_requests', requestId), { status: 'Eliminada', deletedAt: req.deletedAt }, { merge: true }).catch((e) =>
-      console.warn('Firestore deleteLicenseRequest failed:', e)
-    );
+
+    // Actualizar directamente en Supabase PostgreSQL (solicitud_licencias)
+    supabase.from('solicitud_licencias')
+      .update({
+        estado: 'Eliminada',
+        deleted_at: req.deletedAt,
+        detalle_estado: reason || 'Eliminada por el agente',
+      })
+      .eq('codigo', requestId)
+      .then(({ error }) => {
+        if (error) console.warn('Supabase delete notice:', error.message);
+      });
 
     this.auditLogs.unshift({
       id: 'log-' + Date.now(),
@@ -1792,6 +2086,7 @@ class DataService {
     });
     this.saveAuditLogs();
 
+    this.notifyListeners();
     return Promise.resolve(true);
   }
 
@@ -1945,6 +2240,67 @@ class DataService {
       const sLegajo = ((s.nro_empleado ?? s.nroEmpleado ?? '') + '').trim().toLowerCase();
       return (dniClean && sDni === dniClean) || (legajoClean && sLegajo === legajoClean);
     });
+  }
+
+  /**
+   * Consulta licencias de SISO directamente en Supabase PostgreSQL (11.000+ registros en tiempo real)
+   */
+  public async querySisoLicensesByAgent(query: { dni?: string; nroEmpleado?: string }): Promise<SisoLicense[]> {
+    const dniClean = query.dni ? String(query.dni).replace(/\D/g, '') : '';
+    const legajoClean = query.nroEmpleado ? String(query.nroEmpleado).trim() : '';
+    if (!dniClean && !legajoClean) return [];
+
+    try {
+      let q = supabase.from('siso_licencias').select('*');
+      if (dniClean && legajoClean) {
+        q = q.or(`dni.eq.${dniClean},nro_empleado.eq.${legajoClean}`);
+      } else if (dniClean) {
+        q = q.eq('dni', dniClean);
+      } else {
+        q = q.eq('nro_empleado', legajoClean);
+      }
+
+      const { data: dbSiso, error } = await q.order('fecha_desde', { ascending: false });
+      if (!error && dbSiso && dbSiso.length > 0) {
+        return dbSiso.map((s: any): SisoLicense => ({
+          id: s.id,
+          siso_id: s.siso_id,
+          nro_empleado: s.nro_empleado,
+          nroEmpleado: s.nro_empleado,
+          dni: s.dni,
+          nombre: s.nombre,
+          email: s.email,
+          tipo: s.tipo,
+          carga: s.carga,
+          fecha_desde: s.fecha_desde,
+          fecha_hasta: s.fecha_hasta,
+          desde: s.fecha_desde,
+          hasta: s.fecha_hasta,
+          dias: s.dias,
+          justifica: s.justifica,
+          cod_licencia: s.cod_licencia ? String(s.cod_licencia) : '',
+          codLicencia: s.cod_licencia ? String(s.cod_licencia) : '',
+          fecha_alta: s.fecha_alta,
+          fechaAlta: s.fecha_alta,
+          auditor: s.auditor,
+          patologia: s.patologia,
+          fecha_auditoria: s.fecha_auditoria,
+          fechaAuditoria: s.fecha_auditoria,
+          medico_interviniente: s.medico_interviniente,
+          medicoInterviniente: s.medico_interviniente,
+          matricula_medico_interviniente: s.matricula_medico_interviniente,
+          matriculaMedicoInterviniente: s.matricula_medico_interviniente,
+          establecimientos_o_sector: s.establecimientos_o_sector,
+          establecimientosOSector: s.establecimientos_o_sector,
+          fechaImportacion: s.created_at || new Date().toISOString(),
+          importId: 'import-supabase',
+        }));
+      }
+    } catch (e) {
+      console.warn('Error querying SISO from Supabase:', e);
+    }
+
+    return this.getSisoLicensesByAgent(query);
   }
 
   /**

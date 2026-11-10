@@ -124,6 +124,10 @@ export const HorariosModule: React.FC = () => {
 
   useEffect(() => {
     refreshData();
+    const unsub = dataService.subscribe(() => {
+      refreshData();
+    });
+    return unsub;
   }, []);
 
   // Map of cargoId to assigned Docente info
